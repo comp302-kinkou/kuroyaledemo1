@@ -5,7 +5,7 @@ public class Deck {
     private List<Card> cards = new ArrayList<>();
 
     public boolean addCard(Card card) {
-        if (cards.size() >= 4) { // simplified for early stage
+        if (cards.size() >= 4) { // simplified for now
             System.out.println("Deck full!");
             return false;
         }
