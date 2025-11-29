@@ -30,17 +30,15 @@ public class ClashRoyaleFX extends Application {
     }
 
     public void showArenaDesigner() {
-        System.out.println("Arena Designer not included in this commit.");
-        // ArenaDesignView view = new ArenaDesignView(this);
-        // Scene scene = new Scene(view.getView(), 400, 400);
-        // primaryStage.setScene(scene);
+        ArenaDesignView view = new ArenaDesignView(this);
+        Scene scene = new Scene(view.getView(), 400, 400);
+        primaryStage.setScene(scene);
     }
 
     public void showGameView() {
-        System.out.println("Game View not included in this commit.");
-        // GameView view = new GameView(this);
-        // Scene scene = new Scene(view.getView(), 600, 800); // Larger for game
-        // primaryStage.setScene(scene);
+        GameView view = new GameView(this);
+        Scene scene = new Scene(view.getView(), 600, 800); // Larger for game
+        primaryStage.setScene(scene);
     }
 
     public static void main(String[] args) {

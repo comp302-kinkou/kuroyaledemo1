@@ -148,6 +148,25 @@ public class GameController {
         }
     }
 
+    private Unit findNearestEnemyUnit(Tower tower) {
+        double minDistSq = Double.MAX_VALUE;
+        Unit nearest = null;
+        double rangeSq = tower.getRange() * tower.getRange();
+
+        for (Unit unit : activeUnits) {
+            if (tower.isPlayer() != unit.isPlayer()) {
+                double dx = tower.getX() - unit.getX();
+                double dy = tower.getY() - unit.getY();
+                double distSq = dx * dx + dy * dy;
+                if (distSq <= rangeSq && distSq < minDistSq) {
+                    minDistSq = distSq;
+                    nearest = unit;
+                }
+            }
+        }
+        return nearest;
+    }
+
     private Object findNearestTarget(Unit unit) {
         // Search for nearest enemy Unit or Tower
         double minDistSq = Double.MAX_VALUE;
@@ -182,15 +201,41 @@ public class GameController {
         return nearest;
     }
 
-    private Unit findNearestEnemyUnit(Tower tower) {
+    private void updateBuildingBehavior(Building building, double deltaTime) {
+        if (building.isDestroyed())
+            return;
+
+        // 1. Lifetime decay
+        building.update(deltaTime);
+
+        // 2. Spawner logic (if applicable)
+        // (Simplified: just print for now or implement if Building has spawn logic)
+        // For this demo, we assume Building handles its own internal logic in update()
+        // But we might need to handle spawning here if Building just stores data.
+        // Let's assume Building.update() handles lifetime.
+
+        // 3. Defensive Building Attack
+        if (building.getDamage() > 0) {
+            // Find target
+            Unit target = findNearestEnemyUnitForBuilding(building);
+            if (target != null) {
+                if (building.canAttack(System.currentTimeMillis())) {
+                    building.attack(System.currentTimeMillis());
+                    target.takeDamage(building.getDamage());
+                }
+            }
+        }
+    }
+
+    private Unit findNearestEnemyUnitForBuilding(Building building) {
         double minDistSq = Double.MAX_VALUE;
         Unit nearest = null;
-        double rangeSq = tower.getRange() * tower.getRange();
+        double rangeSq = building.getRange() * building.getRange();
 
         for (Unit unit : activeUnits) {
-            if (tower.isPlayer() != unit.isPlayer()) {
-                double dx = tower.getX() - unit.getX();
-                double dy = tower.getY() - unit.getY();
+            if (building.isPlayer() != unit.isPlayer()) {
+                double dx = building.getX() - unit.getX();
+                double dy = building.getY() - unit.getY();
                 double distSq = dx * dx + dy * dy;
                 if (distSq <= rangeSq && distSq < minDistSq) {
                     minDistSq = distSq;
@@ -199,6 +244,49 @@ public class GameController {
             }
         }
         return nearest;
+    }
+
+    private void applySpellDamage(Card card, double x, double y) {
+        double radius = card.getRange();
+        double radiusSq = radius * radius;
+        double damage = card.getDamage();
+
+        // Damage Units
+        for (Unit unit : activeUnits) {
+            // Check if enemy? Spells usually hit everything or just enemies?
+            // Let's assume spells hit enemies only for now, or everything?
+            // Clash Royale spells (Fireball, Arrows) hit enemies.
+            if (!unit.isPlayer()) { // Assuming player casts spell on enemies
+                double dx = unit.getX() - x;
+                double dy = unit.getY() - y;
+                if (dx * dx + dy * dy <= radiusSq) {
+                    unit.takeDamage(damage);
+                }
+            }
+        }
+
+        // Damage Towers
+        for (Tower tower : arena.getTowers()) {
+            if (!tower.isPlayer()) {
+                double dx = tower.getX() - x;
+                double dy = tower.getY() - y;
+                // Tower hitbox is larger, but simple center check for now
+                if (dx * dx + dy * dy <= radiusSq) {
+                    tower.takeDamage(damage);
+                }
+            }
+        }
+
+        // Damage Buildings
+        for (Building building : activeBuildings) {
+            if (!building.isPlayer()) {
+                double dx = building.getX() - x;
+                double dy = building.getY() - y;
+                if (dx * dx + dy * dy <= radiusSq) {
+                    building.takeDamage(damage);
+                }
+            }
+        }
     }
 
     /**
@@ -250,6 +338,10 @@ public class GameController {
 
     public List<Unit> getActiveUnits() {
         return activeUnits;
+    }
+
+    public List<Building> getActiveBuildings() {
+        return activeBuildings;
     }
 
     public boolean isGameRunning() {

@@ -41,6 +41,22 @@ public class Building {
         this.destroyed = false;
         this.lastAttackTime = 0;
         this.timeSinceLastSpawn = 0.0;
+
+    }
+
+    public void update(double deltaTime) {
+        updateLifetime(deltaTime);
+        if (isExpired()) {
+            destroy();
+        }
+
+        if (isSpawner()) {
+            updateSpawnTimer(deltaTime);
+        }
+
+        if (isElixirCollector()) {
+            updateElixirTimer(deltaTime);
+        }
     }
 
     public void updateLifetime(double deltaTime) {
