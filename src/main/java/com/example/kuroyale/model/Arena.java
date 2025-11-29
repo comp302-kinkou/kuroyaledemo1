@@ -1,0 +1,110 @@
+package com.example.kuroyale.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Arena {
+    private double width = 18.0;
+    private double height = 32.0;
+
+    private List<Tower> towers = new ArrayList<>();
+
+    // Bridge positions for collision detection
+    public static class Bridge {
+        public double x;
+        public double width;
+        public String name;
+
+        public Bridge(String name, double x, double width) {
+            this.name = name;
+            this.x = x;
+            this.width = width;
+        }
+
+        public boolean contains(double testX, double testY, double riverY) {
+            // Check if point is on bridge (within width and near river)
+            return Math.abs(testY - riverY) <= 1.0
+                    && testX >= x && testX <= (x + width);
+        }
+    }
+
+    private List<Bridge> bridges = new ArrayList<>();
+    private double riverY = 16.0; // Middle of arena
+
+    public Arena() {
+        // Towers will be initialized by GameController or ArenaDesigner
+    }
+
+    public void setupDefaultTowers() {
+        towers.clear();
+        // Player Towers (Bottom)
+        towers.add(new Tower("KING", 9.0, 30.0, true));
+        towers.add(new Tower("PRINCESS", 3.5, 26.5, true));
+        towers.add(new Tower("PRINCESS", 14.5, 26.5, true));
+
+        // Enemy Towers (Top)
+        towers.add(new Tower("KING", 9.0, 2.0, false));
+        towers.add(new Tower("PRINCESS", 3.5, 5.5, false));
+        towers.add(new Tower("PRINCESS", 14.5, 5.5, false));
+    }
+
+    public void addBridge(String name) {
+        if (bridges.size() >= 3) {
+            System.out.println("Maximum 3 bridges allowed.");
+            return;
+        }
+        // Create bridge at specific positions based on count
+        double x, width = 2.0;
+        switch (bridges.size()) {
+            case 0: // Left bridge
+                x = 3.5;
+                break;
+            case 1: // Right bridge
+                x = 12.5;
+                break;
+            case 2: // Center bridge
+                x = 8.0;
+                break;
+            default:
+                return;
+        }
+        bridges.add(new Bridge(name, x, width));
+    }
+
+    public List<Tower> getTowers() {
+        return towers;
+    }
+
+    public List<Bridge> getBridges() {
+        return bridges;
+    }
+
+    /**
+     * Check if a position is on any bridge (for building placement restriction)
+     */
+    public boolean isOnBridge(double x, double y) {
+        for (Bridge bridge : bridges) {
+            if (bridge.contains(x, y, riverY)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
+    public double getRiverY() {
+        return riverY;
+    }
+
+    @Override
+    public String toString() {
+        return "Arena [Towers=" + towers.size() + ", Bridges=" + bridges.size() + "]";
+    }
+}
