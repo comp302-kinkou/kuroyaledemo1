@@ -34,6 +34,8 @@ public class GameView {
     private ProgressBar elixirBar;
     private HBox handBox;
     private Label messageLabel;
+    private Label timerLabel;
+    private Button btnPause;
 
     private static final double TILE_SIZE = 20.0; // Scale factor
 
@@ -56,9 +58,21 @@ public class GameView {
             mainApp.showMainMenu();
         });
 
-        messageLabel = new Label("Select a card and click on arena to spawn!");
+        btnPause = new Button("Pause");
+        btnPause.setOnAction(e -> {
+            controller.togglePause();
+            updatePauseButton();
+        });
 
-        topBar.getChildren().addAll(btnExit, messageLabel);
+        messageLabel = new Label("Select a card and click on arena to spawn!");
+        timerLabel = new Label("Time: 3:00");
+        timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        // Spacer
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+        topBar.getChildren().addAll(btnExit, btnPause, messageLabel, spacer, timerLabel);
         root.setTop(topBar);
 
         // --- Center: Arena Canvas ---
@@ -106,6 +120,7 @@ public class GameView {
     private void startGame() {
         controller.startGame();
         updateHandView();
+        updatePauseButton();
 
         gameLoop = new AnimationTimer() {
             private long lastTime = 0;
@@ -134,10 +149,28 @@ public class GameView {
         }
     }
 
+    private void updatePauseButton() {
+        if (controller.isPaused()) {
+            btnPause.setText("Resume");
+        } else {
+            btnPause.setText("Pause");
+        }
+    }
+
     private void updateHUD() {
         ElixirManager em = controller.getElixirManager();
         elixirLabel.setText("Elixir: " + em.getElixir());
         elixirBar.setProgress(em.getExactElixir() / 10.0);
+
+        // Update Timer
+        double time = controller.getGameTime();
+        int minutes = (int) time / 60;
+        int seconds = (int) time % 60;
+        timerLabel.setText(String.format("Time: %d:%02d", minutes, seconds));
+
+        if (time <= 0) {
+            messageLabel.setText("GAME OVER!");
+        }
 
         // Check if we need to refresh hand (e.g. after playing a card)
         // For simplicity, we can refresh every frame or check a flag.

@@ -15,6 +15,11 @@ public class GameController {
     private List<Unit> activeUnits;
     private List<Building> activeBuildings;
     private boolean isGameRunning;
+    private UnitController unitController;
+
+    private double gameTime;
+
+    private boolean isPaused;
 
     // For demo purposes, we might want to access the player's deck globally or pass
     // it in
@@ -27,6 +32,9 @@ public class GameController {
         this.activeUnits = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
         this.isGameRunning = false;
+        this.unitController = new UnitController(this, this.arena);
+        this.gameTime = 180.0; // 3 minutes
+        this.isPaused = false;
 
         initializeCards(); // Populate the deck with available cards
     }
@@ -55,24 +63,43 @@ public class GameController {
 
     public void startGame() {
         isGameRunning = true;
+        isPaused = false;
         activeUnits.clear();
         activeBuildings.clear();
         elixirManager = new ElixirManager(); // Reset elixir
         arena.setupDefaultTowers();
         deck.initializeGameDeck();
+        gameTime = 180.0;
         System.out.println("Game Started!");
     }
 
+    public void togglePause() {
+        isPaused = !isPaused;
+        System.out.println("Game " + (isPaused ? "Paused" : "Resumed"));
+    }
+
+    public boolean isPaused() {
+        return isPaused;
+    }
+
     public void update(double deltaTime) {
-        if (!isGameRunning)
+        if (!isGameRunning || isPaused)
             return;
+
+        gameTime -= deltaTime;
+        if (gameTime <= 0) {
+            gameTime = 0;
+            isGameRunning = false;
+            System.out.println("Game Over!");
+            return;
+        }
 
         // 1. Update Elixir
         elixirManager.update(deltaTime);
 
         // 2. Update Units (Movement and Attack)
         for (Unit unit : activeUnits) {
-            updateUnitBehavior(unit, deltaTime);
+            unitController.updateUnitBehavior(unit, deltaTime);
         }
 
         // 3. Update Buildings (Attack, Spawn, Elixir Generation, Lifetime)
@@ -88,50 +115,6 @@ public class GameController {
         // 5. Remove dead units and expired/destroyed buildings
         activeUnits.removeIf(Unit::isDead);
         activeBuildings.removeIf(Building::isDestroyed);
-    }
-
-    private void updateUnitBehavior(Unit unit, double deltaTime) {
-        // Simple AI: Find nearest enemy target (Tower or Unit)
-        // If in range -> Attack
-        // If not in range -> Move towards it
-
-        Object target = findNearestTarget(unit);
-
-        if (target != null) {
-            double targetX = 0, targetY = 0;
-            double targetRadius = 0.5; // Hitbox radius
-
-            if (target instanceof Unit) {
-                targetX = ((Unit) target).getX();
-                targetY = ((Unit) target).getY();
-            } else if (target instanceof Tower) {
-                targetX = ((Tower) target).getX();
-                targetY = ((Tower) target).getY();
-                targetRadius = 1.0; // Towers are bigger
-            }
-
-            if (unit.isInRange(targetX, targetY, targetRadius)) {
-                // Attack
-                if (unit.canAttack(System.currentTimeMillis())) {
-                    unit.attack(System.currentTimeMillis());
-                    if (target instanceof Unit) {
-                        ((Unit) target).takeDamage(unit.getDamage());
-                    } else if (target instanceof Tower) {
-                        ((Tower) target).takeDamage(unit.getDamage());
-                    }
-                }
-            } else {
-                // Move
-                // For simple pathfinding, move towards bridge if on own side, or target if
-                // across river
-                // Simplified: just move towards target
-                unit.moveTowards(targetX, targetY, deltaTime);
-            }
-        } else {
-            // No target, move forward (up for player, down for enemy)
-            double forwardY = unit.isPlayer() ? 0 : arena.getHeight();
-            unit.moveTowards(unit.getX(), forwardY, deltaTime);
-        }
     }
 
     private void updateTowerBehavior(Tower tower, double deltaTime) {
@@ -164,40 +147,6 @@ public class GameController {
                 }
             }
         }
-        return nearest;
-    }
-
-    private Object findNearestTarget(Unit unit) {
-        // Search for nearest enemy Unit or Tower
-        double minDistSq = Double.MAX_VALUE;
-        Object nearest = null;
-
-        // Check enemy units
-        for (Unit other : activeUnits) {
-            if (unit.isPlayer() != other.isPlayer()) {
-                double dx = unit.getX() - other.getX();
-                double dy = unit.getY() - other.getY();
-                double distSq = dx * dx + dy * dy;
-                if (distSq < minDistSq) {
-                    minDistSq = distSq;
-                    nearest = other;
-                }
-            }
-        }
-
-        // Check enemy towers
-        for (Tower tower : arena.getTowers()) {
-            if (unit.isPlayer() != tower.isPlayer() && !tower.isDestroyed()) {
-                double dx = unit.getX() - tower.getX();
-                double dy = unit.getY() - tower.getY();
-                double distSq = dx * dx + dy * dy;
-                if (distSq < minDistSq) {
-                    minDistSq = distSq;
-                    nearest = tower;
-                }
-            }
-        }
-
         return nearest;
     }
 
@@ -346,5 +295,9 @@ public class GameController {
 
     public boolean isGameRunning() {
         return isGameRunning;
+    }
+
+    public double getGameTime() {
+        return gameTime;
     }
 }
