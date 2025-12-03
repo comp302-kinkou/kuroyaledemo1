@@ -2,6 +2,7 @@ package com.example.kuroyale.view;
 
 import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.model.Arena;
+import com.example.kuroyale.model.Tower;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -73,7 +74,48 @@ public class ArenaDesignView {
 
     private void updateArenaDisplay(TextArea display) {
         Arena arena = controller.getArena();
-        display.setText(arena.toString());
+
+        StringBuilder sb = new StringBuilder();
+
+        // ===== Arena info =====
+        sb.append("Arena Size: ")
+                .append(arena.getWidth())
+                .append(" x ")
+                .append(arena.getHeight())
+                .append("\n");
+        sb.append("River Y: ")
+                .append(arena.getRiverY())
+                .append("\n\n");
+
+        // ===== Towers =====
+        sb.append("TOWERS:\n");
+        if (arena.getTowers().isEmpty()) {
+            sb.append("  (none)\n");
+        } else {
+            for (Tower t : arena.getTowers()) {
+                sb.append("  - ")
+                        .append(t.toString())
+                        .append("\n");
+            }
+        }
+
+        // ===== Bridges =====
+        sb.append("\nBRIDGES:\n");
+        if (arena.getBridges().isEmpty()) {
+            sb.append("  (none)\n");
+        } else {
+            for (Arena.Bridge b : arena.getBridges()) {
+                sb.append("  - ")
+                        .append(b.name)
+                        .append(" (x=")
+                        .append(b.x)
+                        .append(", width=")
+                        .append(b.width)
+                        .append(")\n");
+            }
+        }
+
+        display.setText(sb.toString());
     }
 
     private void showAlert(String title, String content) {

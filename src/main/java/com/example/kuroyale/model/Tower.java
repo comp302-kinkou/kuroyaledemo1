@@ -73,4 +73,19 @@ public class Tower {
     public double getDamage() {
         return damage;
     }
+
+    public String getType() {
+        return type;
+    }
+    // getType method
+
+    public double getMaxHealth() {
+        return maxHealth;
+    }
+
+    // getMaxHealth method
+    @Override
+    public String toString() {
+        return type + " Tower @ (" + x + ", " + y + "), HP=" + health + "/" + maxHealth + ", player=" + isPlayer;
+    }
 }
