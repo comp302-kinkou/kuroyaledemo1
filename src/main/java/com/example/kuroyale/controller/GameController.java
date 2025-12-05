@@ -20,6 +20,7 @@ public class GameController {
     private double gameTime;
 
     private boolean isPaused;
+    private String gameResult; // "WIN", "LOSS", "DRAW", or null if game is ongoing
 
     // For demo purposes, we might want to access the player's deck globally or pass
     // it in
@@ -35,6 +36,7 @@ public class GameController {
         this.unitController = new UnitController(this, this.arena);
         this.gameTime = 180.0; // 3 minutes
         this.isPaused = false;
+        this.gameResult = null;
 
         initializeCards(); // Populate the deck with available cards
     }
@@ -64,6 +66,7 @@ public class GameController {
     public void startGame() {
         isGameRunning = true;
         isPaused = false;
+        gameResult = null;
         activeUnits.clear();
         activeBuildings.clear();
         elixirManager = new ElixirManager(); // Reset elixir
@@ -87,12 +90,6 @@ public class GameController {
             return;
 
         gameTime -= deltaTime;
-        if (gameTime <= 0) {
-            gameTime = 0;
-            isGameRunning = false;
-            System.out.println("Game Over!");
-            return;
-        }
 
         // 1. Update Elixir
         elixirManager.update(deltaTime);
@@ -115,6 +112,20 @@ public class GameController {
         // 5. Remove dead units and expired/destroyed buildings
         activeUnits.removeIf(Unit::isDead);
         activeBuildings.removeIf(Building::isDestroyed);
+
+        // 6. Check win conditions (after all updates to catch tower destruction)
+        checkWinConditions();
+        
+        // 7. Check for timeout after win condition check
+        if (gameTime <= 0) {
+            gameTime = 0;
+            if (gameResult == null) {
+                // Time ran out without a winner - determine winner by tower health
+                determineTimeoutWinner();
+            }
+            isGameRunning = false;
+            return;
+        }
     }
 
     private void updateTowerBehavior(Tower tower, double deltaTime) {
@@ -299,5 +310,98 @@ public class GameController {
 
     public double getGameTime() {
         return gameTime;
+    }
+
+    /**
+     * Checks for win conditions and ends game immediately if met.
+     * Win conditions:
+     * 1. If any king tower is destroyed, the game ends immediately
+     */
+    private void checkWinConditions() {
+        if (!isGameRunning || gameResult != null) {
+            return; // Game already ended
+        }
+
+        // Check for king tower destruction
+        boolean playerKingDestroyed = false;
+        boolean enemyKingDestroyed = false;
+
+        for (Tower tower : arena.getTowers()) {
+            if (tower.getType().equals("KING")) {
+                if (tower.isDestroyed()) {
+                    if (tower.isPlayer()) {
+                        playerKingDestroyed = true;
+                    } else {
+                        enemyKingDestroyed = true;
+                    }
+                }
+            }
+        }
+
+        // If any king tower is destroyed, end game immediately
+        if (playerKingDestroyed && enemyKingDestroyed) {
+            // Both kings destroyed simultaneously (rare case)
+            endGame("DRAW");
+            System.out.println("Game Over! DRAW - Both kings destroyed!");
+        } else if (enemyKingDestroyed) {
+            // Enemy king destroyed - player wins
+            endGame("WIN");
+            System.out.println("Game Over! VICTORY - Enemy king tower destroyed!");
+        } else if (playerKingDestroyed) {
+            // Player king destroyed - player loses
+            endGame("LOSS");
+            System.out.println("Game Over! DEFEAT - Your king tower was destroyed!");
+        }
+    }
+
+    /**
+     * Determines the winner when time runs out by comparing remaining tower health.
+     * Winner is the player with the highest total tower health.
+     */
+    private void determineTimeoutWinner() {
+        if (gameResult != null) {
+            return; // Winner already determined
+        }
+
+        double playerTowerHealth = 0.0;
+        double enemyTowerHealth = 0.0;
+
+        for (Tower tower : arena.getTowers()) {
+            if (!tower.isDestroyed()) {
+                double health = tower.getHealth();
+                if (tower.isPlayer()) {
+                    playerTowerHealth += health;
+                } else {
+                    enemyTowerHealth += health;
+                }
+            }
+        }
+
+        if (playerTowerHealth > enemyTowerHealth) {
+            endGame("WIN");
+            System.out.println("Game Over! VICTORY - You have more tower health!");
+        } else if (enemyTowerHealth > playerTowerHealth) {
+            endGame("LOSS");
+            System.out.println("Game Over! DEFEAT - Enemy has more tower health!");
+        } else {
+            endGame("DRAW");
+            System.out.println("Game Over! DRAW - Equal tower health!");
+        }
+    }
+
+    /**
+     * Ends the game and sets the result
+     */
+    private void endGame(String result) {
+        isGameRunning = false;
+        gameResult = result;
+        gameTime = 0; // Stop timer
+    }
+
+    /**
+     * Returns the game result: "WIN", "LOSS", "DRAW", or null if game is still running
+     */
+    public String getGameResult() {
+        return gameResult;
     }
 }
