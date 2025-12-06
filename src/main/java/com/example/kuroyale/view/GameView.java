@@ -1,6 +1,7 @@
 package com.example.kuroyale.view;
 
 import com.example.kuroyale.controller.GameController;
+import com.example.kuroyale.controller.GameLoop;
 import com.example.kuroyale.model.*;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -24,7 +25,8 @@ public class GameView {
     private GameController controller;
     private Canvas canvas;
     private GraphicsContext gc;
-    private AnimationTimer gameLoop;
+    private GameLoop gameLoop;
+    private AnimationTimer animationTimer;
 
     private Card selectedCard = null;
     private int selectedHandIndex = -1;
@@ -122,28 +124,26 @@ public class GameView {
         updateHandView();
         updatePauseButton();
 
-        gameLoop = new AnimationTimer() {
-            private long lastTime = 0;
+        // Create GameLoop for game state updates
+        gameLoop = new GameLoop(controller);
+        gameLoop.start();
 
+        // Create AnimationTimer for rendering (view concern)
+        animationTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (lastTime == 0) {
-                    lastTime = now;
-                    return;
-                }
-
-                double deltaTime = (now - lastTime) / 1e9; // Seconds
-                lastTime = now;
-
-                controller.update(deltaTime);
-                render();
-                updateHUD();
+                gameLoop.update(now); // Update game state
+                render();              // Render graphics
+                updateHUD();           // Update HUD
             }
         };
-        gameLoop.start();
+        animationTimer.start();
     }
 
     private void stopGame() {
+        if (animationTimer != null) {
+            animationTimer.stop();
+        }
         if (gameLoop != null) {
             gameLoop.stop();
         }
