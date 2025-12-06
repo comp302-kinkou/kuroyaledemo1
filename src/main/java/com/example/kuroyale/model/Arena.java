@@ -7,6 +7,8 @@ public class Arena {
     private double width = 18.0;
     private double height = 32.0;
 
+    private static final int MAX_BRIDGE = 3;
+
     private List<Tower> towers = new ArrayList<>();
 
     // Bridge positions for collision detection
@@ -48,27 +50,30 @@ public class Arena {
         towers.add(new Tower("PRINCESS", 14.5, 5.5, false));
     }
 
-    public void addBridge(String name) {
-        if (bridges.size() >= 3) {
-            System.out.println("Maximum 3 bridges allowed.");
-            return;
+    public void addTower(Tower tower) {
+        towers.add(tower);
+    }
+
+    public void clearTowers() {
+        towers.clear();
+    }
+
+    public void clearBridges() {
+        bridges.clear();
+    }
+
+    public boolean addBridge(String name, double x) {
+        if (bridges.size() >= MAX_BRIDGE) {
+            System.out.println("Maximum " + MAX_BRIDGE + " bridges allowed.");
+            return false;
         }
-        // Create bridge at specific positions based on count
-        double x, width = 2.0;
-        switch (bridges.size()) {
-            case 0: // Left bridge
-                x = 3.5;
-                break;
-            case 1: // Right bridge
-                x = 12.5;
-                break;
-            case 2: // Center bridge
-                x = 8.0;
-                break;
-            default:
-                return;
+
+        if (x < 0 || x > width - 2.0) {
+            return false;
         }
-        bridges.add(new Bridge(name, x, width));
+
+        bridges.add(new Bridge(name, x, 2.0));
+        return true;
     }
 
     public List<Tower> getTowers() {

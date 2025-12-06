@@ -70,7 +70,12 @@ public class GameController {
         activeUnits.clear();
         activeBuildings.clear();
         elixirManager = new ElixirManager(); // Reset elixir
-        arena.setupDefaultTowers();
+
+        // Only set default if no towers exist (i.e. not customized)
+        if (arena.getTowers().isEmpty()) {
+            arena.setupDefaultTowers();
+        }
+
         deck.initializeGameDeck();
         gameTime = 180.0;
         System.out.println("Game Started!");
