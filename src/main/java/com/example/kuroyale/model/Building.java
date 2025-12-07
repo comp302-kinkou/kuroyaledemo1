@@ -23,9 +23,12 @@ public class Building {
     private double elixirGenerationInterval = 10.0; // 1 elixir every 10s
     private double timeSinceLastElixir = 0.0;
 
+    private TransportType transportType;
+    private TargetType targetType;
+
     public Building(String name, double x, double y, boolean isPlayer, double health,
             double damage, double range, double hitSpeed, double lifetime,
-            String buildingType) {
+            String buildingType, TransportType transportType, TargetType targetType) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -41,7 +44,8 @@ public class Building {
         this.destroyed = false;
         this.lastAttackTime = 0;
         this.timeSinceLastSpawn = 0.0;
-
+        this.transportType = transportType;
+        this.targetType = targetType;
     }
 
     public void update(double deltaTime) {
@@ -176,5 +180,13 @@ public class Building {
 
     public String getSpawnedUnitType() {
         return spawnedUnitType;
+    }
+
+    public TransportType getTransportType() {
+        return transportType;
+    }
+
+    public TargetType getTargetType() {
+        return targetType;
     }
 }

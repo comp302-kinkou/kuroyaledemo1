@@ -18,6 +18,8 @@ public class UnitFactory {
                 card.getDamage(),
                 card.getRange(),
                 card.getSpeed(),
-                card.getHitSpeed());
+                card.getHitSpeed(),
+                card.getTransportType(),
+                card.getTargetType());
     }
 }

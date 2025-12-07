@@ -18,7 +18,9 @@ public class BuildingFactory {
                 card.getRange(),
                 card.getHitSpeed(),
                 getLifetime(name),
-                type);
+                type,
+                card.getTransportType(),
+                card.getTargetType());
 
         // Set spawner properties if it's a spawner building
         if (type.equals("SPAWNER")) {

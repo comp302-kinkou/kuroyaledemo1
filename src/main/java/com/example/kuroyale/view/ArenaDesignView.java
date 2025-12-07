@@ -183,18 +183,7 @@ public class ArenaDesignView {
     }
 
     private boolean isKing(Tower t) {
-        // Tower class doesn't expose type directly via getter in outline, but damage/hp
-        // differs
-        // Or we can check if maxHealth == 4000.
-        // Adding a helper in Tower would be better, but we can infer or assume
-        // type was passed in constructor. Wait, Tower HAS a type field but no
-        // getType().
-        // Let's assume based on maxHealth for now or add getter.
-        // Actually, looking at Tower.java, it has a private type but no getter.
-        // I should probably add a getType() to Tower.java to be clean.
-        // For now, let's use getHealth() or just trust the loop.
-        // Actually I know what I added.
-        return t.getHealth() >= 4000; // King has 4000
+        return "KING".equals(t.getType());
     }
 
     private void render() {
@@ -230,16 +219,9 @@ public class ArenaDesignView {
             gc.fillOval((t.getX() * scale) - size / 2, (t.getY() * scale) - size / 2, size, size);
         }
 
-        // Draw Mirror Preview (Enemy) - Optional constraint: User designs their side,
-        // we mirror.
-        // Show ghostly red towers on top
+        // Draw Mirror Preview (Enemy)
         for (Tower t : tempTowers) {
-            double mirrorX = t.getX(); // Same X or mirrored X? Usually mirrored logic varies.
-            // Standard mirror: X is same? No, usually X is same for simple mirror or 180
-            // rot.
-            // Clash Royale is point symmetry usually (Rotated).
-            // If I put King at left, enemy king is at right? No, enemy king is opposite.
-            // Let's assumes simple Y mirror for now.
+            double mirrorX = t.getX();
 
             double mirrorY = (arena.getHeight()) - t.getY();
 

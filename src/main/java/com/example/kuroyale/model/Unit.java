@@ -15,8 +15,12 @@ public class Unit {
     private double targetX, targetY;
     private boolean hasTarget;
 
+    // New fields
+    private TransportType transportType;
+    private TargetType targetType;
+
     public Unit(String name, double x, double y, boolean isPlayer, double health, double damage, double range,
-            double speed, double hitSpeed) {
+            double speed, double hitSpeed, TransportType transportType, TargetType targetType) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -28,6 +32,8 @@ public class Unit {
         this.hitSpeed = hitSpeed;
         this.lastAttackTime = 0;
         this.hasTarget = false;
+        this.transportType = transportType;
+        this.targetType = targetType;
     }
 
     public void moveTowards(double tx, double ty, double deltaTime) {
@@ -85,5 +91,13 @@ public class Unit {
 
     public String getName() {
         return name;
+    }
+
+    public TransportType getTransportType() {
+        return transportType;
+    }
+
+    public TargetType getTargetType() {
+        return targetType;
     }
 }

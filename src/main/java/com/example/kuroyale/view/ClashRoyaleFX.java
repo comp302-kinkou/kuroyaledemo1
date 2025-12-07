@@ -31,7 +31,7 @@ public class ClashRoyaleFX extends Application {
 
     public void showArenaDesigner() {
         ArenaDesignView view = new ArenaDesignView(this);
-        Scene scene = new Scene(view.getView(), 500, 750);
+        Scene scene = new Scene(view.getView(), 500, 850);
         primaryStage.setScene(scene);
     }
 
