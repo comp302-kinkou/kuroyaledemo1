@@ -120,7 +120,7 @@ public class GameController {
 
         // 6. Check win conditions (after all updates to catch tower destruction)
         checkWinConditions();
-        
+
         // 7. Check for timeout after win condition check
         if (gameTime <= 0) {
             gameTime = 0;
@@ -199,6 +199,10 @@ public class GameController {
 
         for (Unit unit : activeUnits) {
             if (building.isPlayer() != unit.isPlayer()) {
+                if (!isValidTarget(building, unit)) {
+                    continue;
+                }
+
                 double dx = building.getX() - unit.getX();
                 double dy = building.getY() - unit.getY();
                 double distSq = dx * dx + dy * dy;
@@ -404,9 +408,31 @@ public class GameController {
     }
 
     /**
-     * Returns the game result: "WIN", "LOSS", "DRAW", or null if game is still running
+     * Returns the game result: "WIN", "LOSS", "DRAW", or null if game is still
+     * running
      */
     public String getGameResult() {
         return gameResult;
+    }
+
+    private boolean isValidTarget(Building attacker, Unit target) {
+        TargetType attackerTargetType = attacker.getTargetType();
+        TransportType targetTransport = target.getTransportType();
+
+        if (attackerTargetType == TargetType.NONE) {
+            return false;
+        }
+
+        if (attackerTargetType == TargetType.BUILDINGS) {
+            return false;
+        }
+
+        if (targetTransport == TransportType.AIR) {
+            return attackerTargetType == TargetType.AIR_AND_GROUND;
+        } else if (targetTransport == TransportType.GROUND) {
+            return (attackerTargetType == TargetType.GROUND || attackerTargetType == TargetType.AIR_AND_GROUND);
+        }
+
+        return false;
     }
 }

@@ -88,4 +88,5 @@ public class Tower {
     public String toString() {
         return type + " Tower @ (" + x + ", " + y + "), HP=" + health + "/" + maxHealth + ", player=" + isPlayer;
     }
+
 }

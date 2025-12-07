@@ -10,9 +10,11 @@ public class Card {
     private double speed;
     private double health;
     private String imagePath;
+    private TransportType transportType;
+    private TargetType targetType;
 
     public Card(String name, int elixirCost, String type, double range, double damage, double hitSpeed, double speed,
-            double health, String imagePath) {
+            double health, String imagePath, TransportType transportType, TargetType targetType) {
         this.name = name;
         this.elixirCost = elixirCost;
         this.type = type;
@@ -22,11 +24,21 @@ public class Card {
         this.speed = speed;
         this.health = health;
         this.imagePath = imagePath;
+        this.transportType = transportType;
+        this.targetType = targetType;
     }
 
-    // Simplified constructor for backward compatibility (optional, or update calls)
+    // Simplified constructor for backward compatibility (defaults to GROUND/GROUND)
     public Card(String name, int elixirCost) {
-        this(name, elixirCost, "TROOP", 1.0, 100, 1.0, 1.0, 500, "");
+        this(name, elixirCost, "TROOP", 1.0, 100, 1.0, 1.0, 500, "", TransportType.GROUND, TargetType.GROUND);
+    }
+
+    // Backward compatibility for existing full constructor (defaults to
+    // GROUND/GROUND)
+    public Card(String name, int elixirCost, String type, double range, double damage, double hitSpeed, double speed,
+            double health, String imagePath) {
+        this(name, elixirCost, type, range, damage, hitSpeed, speed, health, imagePath, TransportType.GROUND,
+                TargetType.GROUND);
     }
 
     public String getName() {
@@ -63,6 +75,14 @@ public class Card {
 
     public String getImagePath() {
         return imagePath;
+    }
+
+    public TransportType getTransportType() {
+        return transportType;
+    }
+
+    public TargetType getTargetType() {
+        return targetType;
     }
 
     @Override

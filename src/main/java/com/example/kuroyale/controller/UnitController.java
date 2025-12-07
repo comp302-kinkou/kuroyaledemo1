@@ -26,6 +26,9 @@ public class UnitController {
             } else if (target instanceof Tower) {
                 targetX = ((Tower) target).getX();
                 targetY = ((Tower) target).getY();
+            } else if (target instanceof Building) {
+                targetX = ((Building) target).getX();
+                targetY = ((Building) target).getY();
             }
 
             if (unit.isInRange(targetX, targetY, targetRadius)) {
@@ -36,6 +39,8 @@ public class UnitController {
                         ((Unit) target).takeDamage(unit.getDamage());
                     } else if (target instanceof Tower) {
                         ((Tower) target).takeDamage(unit.getDamage());
+                    } else if (target instanceof Building) {
+                        ((Building) target).takeDamage(unit.getDamage());
                     }
                 }
             } else {
@@ -52,6 +57,12 @@ public class UnitController {
 
         // check if we need to cross the river
         boolean needsToCross = (currentY < riverY && targetY > riverY) || (currentY > riverY && targetY < riverY);
+
+        // If unit is AIR, it can fly over the river
+        if (unit.getTransportType() == TransportType.AIR) {
+            unit.moveTowards(targetX, targetY, deltaTime);
+            return;
+        }
 
         if (needsToCross) {
             // find closest bridge
@@ -93,6 +104,11 @@ public class UnitController {
         // Check enemy units
         for (Unit other : gameController.getActiveUnits()) {
             if (unit.isPlayer() != other.isPlayer()) {
+                // Check TargetType
+                if (!isValidTarget(unit, other)) {
+                    continue;
+                }
+
                 double dx = unit.getX() - other.getX();
                 double dy = unit.getY() - other.getY();
                 double distSq = dx * dx + dy * dy;
@@ -106,6 +122,10 @@ public class UnitController {
         // Check enemy towers
         for (Tower tower : arena.getTowers()) {
             if (unit.isPlayer() != tower.isPlayer() && !tower.isDestroyed()) {
+                if (!isValidTarget(unit, tower)) {
+                    continue;
+                }
+
                 double dx = unit.getX() - tower.getX();
                 double dy = unit.getY() - tower.getY();
                 double distSq = dx * dx + dy * dy;
@@ -116,6 +136,63 @@ public class UnitController {
             }
         }
 
+        // Check enemy buildings
+        for (Building building : gameController.getActiveBuildings()) {
+            if (unit.isPlayer() != building.isPlayer() && !building.isDestroyed()) {
+                if (!isValidTarget(unit, building)) {
+                    continue;
+                }
+
+                double dx = unit.getX() - building.getX();
+                double dy = unit.getY() - building.getY();
+                double distSq = dx * dx + dy * dy;
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    nearest = building;
+                }
+            }
+        }
+
         return nearest;
+    }
+
+    private boolean isValidTarget(Unit attacker, Object target) {
+        TargetType attackerTargetType = attacker.getTargetType();
+
+        if (attackerTargetType == TargetType.NONE) {
+            return false;
+        }
+
+        // 1. Handle Buildings & Towers (They are "Ground" targets concept, but not
+        // TransportType.GROUND)
+        if (target instanceof Tower || target instanceof Building) {
+            // Who targets buildings?
+            // - GROUND targeters (Knight) -> YES
+            // - AIR_AND_GROUND targeters (Minions) -> YES
+            // - BUILDINGS targeters (Giant) -> YES
+            return true;
+        }
+
+        // 2. Handle Units (Troops)
+        if (target instanceof Unit) {
+            Unit targetUnit = (Unit) target;
+            TransportType targetTransport = targetUnit.getTransportType();
+
+            // Units cannot target strictly "BUILDINGS" types
+            if (attackerTargetType == TargetType.BUILDINGS) {
+                return false;
+            }
+
+            // Logic for hitting troops
+            if (targetTransport == TransportType.AIR) {
+                // Only AIR_AND_GROUND can hit Air
+                return attackerTargetType == TargetType.AIR_AND_GROUND;
+            } else if (targetTransport == TransportType.GROUND) {
+                // GROUND and AIR_AND_GROUND can hit Ground troops
+                return (attackerTargetType == TargetType.GROUND || attackerTargetType == TargetType.AIR_AND_GROUND);
+            }
+        }
+
+        return false;
     }
 }
