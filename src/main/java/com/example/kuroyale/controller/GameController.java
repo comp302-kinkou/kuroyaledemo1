@@ -269,6 +269,18 @@ public class GameController {
     }
 
     /**
+     * Gets the CardProgression for a card based on its rarity.
+     * Currently returns Level 1 progression (upgrade system to be added later).
+     */
+    private CardProgression getCardProgression(Card card) {
+        CardRarity rarity = CardLibrary.getCardRarity(card.getName());
+        if (rarity != null) {
+            return new CardProgression(card.getName(), rarity);
+        }
+        return null; // Card not found in library
+    }
+
+    /**
      * Play a card at the specified position
      * Handles different card types: TROOP, BUILDING, SPELL
      * Applies level-based stat bonuses from Card Evolution & Rarity System
@@ -277,6 +289,9 @@ public class GameController {
         if (!elixirManager.spendElixir(card.getElixirCost())) {
             return false;
         }
+
+        // Get card progression for level bonuses
+        CardProgression progression = getCardProgression(card);
 
         switch (card.getType()) {
             case "TROOP":
