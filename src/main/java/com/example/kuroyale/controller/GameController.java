@@ -9,9 +9,11 @@ public class GameController {
 
     private static GameController instance;
 
-    private Deck deck;
+    private Deck deck; // Player's deck
     private Arena arena;
-    private ElixirManager elixirManager;
+    private ElixirManager playerElixirManager;
+    private ElixirManager computerElixirManager;
+    private ComputerOpponent computerOpponent;
     private List<Unit> activeUnits;
     private List<Building> activeBuildings;
     private List<Effect> activeEffects;
@@ -32,7 +34,9 @@ public class GameController {
     private GameController() {
         this.deck = new Deck();
         this.arena = new Arena();
-        this.elixirManager = new ElixirManager();
+        this.playerElixirManager = new ElixirManager();
+        this.computerElixirManager = new ElixirManager();
+        this.computerOpponent = new ComputerOpponent(this);
         this.activeUnits = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
         this.activeEffects = new ArrayList<>();
@@ -97,10 +101,11 @@ public class GameController {
         isGameRunning = true;
         isPaused = false;
         gameResult = null;
-        activeUnits.clear();
         activeBuildings.clear();
         activeEffects.clear();
-        elixirManager = new ElixirManager(); // Reset elixir
+        playerElixirManager = new ElixirManager(); // Reset player elixir
+        computerElixirManager = new ElixirManager(); // Reset computer elixir
+        computerOpponent = new ComputerOpponent(this); // Reset opponent logic
         timeScale = 1.0; // Reset speed
 
         // Only set default if no towers exist (i.e. not customized)
@@ -132,7 +137,11 @@ public class GameController {
         gameTime -= scaledDeltaTime;
 
         // 1. Update Elixir
-        elixirManager.update(scaledDeltaTime);
+        playerElixirManager.update(scaledDeltaTime);
+        computerElixirManager.update(scaledDeltaTime);
+
+        // Update Computer Opponent
+        computerOpponent.update(scaledDeltaTime);
 
         // 2. Update Units (Movement and Attack)
         for (Unit unit : activeUnits) {
@@ -345,8 +354,20 @@ public class GameController {
      * Handles different card types: TROOP, BUILDING, SPELL
      * Applies level-based stat bonuses from Card Evolution & Rarity System
      */
+    /**
+     * Play a card at the specified position for the player
+     */
     public boolean playCard(Card card, double x, double y) {
-        if (!elixirManager.spendElixir(card.getElixirCost())) {
+        return playCard(card, x, y, true);
+    }
+
+    /**
+     * Play a card at the specified position with player flag
+     */
+    public boolean playCard(Card card, double x, double y, boolean isPlayer) {
+        ElixirManager rsc = isPlayer ? playerElixirManager : computerElixirManager;
+
+        if (!rsc.spendElixir(card.getElixirCost())) {
             return false;
         }
 
@@ -355,22 +376,25 @@ public class GameController {
 
         switch (card.getType()) {
             case "TROOP":
-                Unit newUnit = UnitFactory.createUnit(card, x, y, true, progression);
+                Unit newUnit = UnitFactory.createUnit(card, x, y, isPlayer, progression);
                 activeUnits.add(newUnit);
-                System.out.println("Troop spawned: " + card.getName() + " (Level " +
-                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+                System.out
+                        .println((isPlayer ? "Player" : "Computer") + " spawned Troop: " + card.getName() + " (Level " +
+                                (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "BUILDING":
-                Building newBuilding = BuildingFactory.createBuilding(card, x, y, true, progression);
+                Building newBuilding = BuildingFactory.createBuilding(card, x, y, isPlayer, progression);
                 activeBuildings.add(newBuilding);
-                System.out.println("Building placed: " + card.getName() + " (Level " +
-                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+                System.out.println(
+                        (isPlayer ? "Player" : "Computer") + " placed Building: " + card.getName() + " (Level " +
+                                (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "SPELL":
-                applySpellDamage(card, x, y, progression);
-                System.out.println("Spell cast: " + card.getName() + " (Level " +
+                applySpellDamage(card, x, y, progression); // Spell works same way, damage logic handles friend/foe
+                                                           // based on target
+                System.out.println((isPlayer ? "Player" : "Computer") + " cast Spell: " + card.getName() + " (Level " +
                         (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
@@ -391,7 +415,11 @@ public class GameController {
     }
 
     public ElixirManager getElixirManager() {
-        return elixirManager;
+        return playerElixirManager;
+    }
+
+    public ElixirManager getComputerElixirManager() {
+        return computerElixirManager;
     }
 
     public List<Unit> getActiveUnits() {
