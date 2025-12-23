@@ -216,9 +216,19 @@ public class GameController {
     }
 
     private void applySpellDamage(Card card, double x, double y) {
+        applySpellDamage(card, x, y, null);
+    }
+
+    private void applySpellDamage(Card card, double x, double y, CardProgression progression) {
         double radius = card.getRange();
         double radiusSq = radius * radius;
         double damage = card.getDamage();
+        
+        // Apply level bonuses if progression is provided
+        if (progression != null) {
+            damage = progression.applyLevelBonus(damage);
+            damage = Math.round(damage);
+        }
 
         // Damage Units
         for (Unit unit : activeUnits) {
@@ -261,6 +271,7 @@ public class GameController {
     /**
      * Play a card at the specified position
      * Handles different card types: TROOP, BUILDING, SPELL
+     * Applies level-based stat bonuses from Card Evolution & Rarity System
      */
     public boolean playCard(Card card, double x, double y) {
         if (!elixirManager.spendElixir(card.getElixirCost())) {
@@ -269,20 +280,23 @@ public class GameController {
 
         switch (card.getType()) {
             case "TROOP":
-                Unit newUnit = UnitFactory.createUnit(card, x, y, true);
+                Unit newUnit = UnitFactory.createUnit(card, x, y, true, progression);
                 activeUnits.add(newUnit);
-                System.out.println("Troop spawned: " + card.getName() + " at (" + x + ", " + y + ")");
+                System.out.println("Troop spawned: " + card.getName() + " (Level " + 
+                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "BUILDING":
-                Building newBuilding = BuildingFactory.createBuilding(card, x, y, true);
+                Building newBuilding = BuildingFactory.createBuilding(card, x, y, true, progression);
                 activeBuildings.add(newBuilding);
-                System.out.println("Building placed: " + card.getName() + " at (" + x + ", " + y + ")");
+                System.out.println("Building placed: " + card.getName() + " (Level " + 
+                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "SPELL":
-                applySpellDamage(card, x, y);
-                System.out.println("Spell cast: " + card.getName() + " at (" + x + ", " + y + ")");
+                applySpellDamage(card, x, y, progression);
+                System.out.println("Spell cast: " + card.getName() + " (Level " + 
+                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             default:

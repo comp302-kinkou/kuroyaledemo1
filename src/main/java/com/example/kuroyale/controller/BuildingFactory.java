@@ -2,19 +2,38 @@ package com.example.kuroyale.controller;
 
 import com.example.kuroyale.model.Building;
 import com.example.kuroyale.model.Card;
+import com.example.kuroyale.model.CardProgression;
 
 public class BuildingFactory {
 
+    // Constructor with no progression
     public static Building createBuilding(Card card, double x, double y, boolean isPlayer) {
+        return createBuilding(card, x, y, isPlayer, null);
+    }
+
+    // Creates a building from a card, applying level-based stat bonuses if progression is provided.
+    // New constructor with progression: either null or a certain progression object depending on the call
+    public static Building createBuilding(Card card, double x, double y, boolean isPlayer, CardProgression progression) {
         String name = card.getName();
         String type = determineBuildingType(name);
+
+        double health = card.getHealth();
+        double damage = card.getDamage();
+
+        // Apply level bonuses if progression is provided
+        if (progression != null) {
+            health = progression.applyLevelBonus(health);
+            damage = progression.applyLevelBonus(damage);
+            // Round damage to nearest integer
+            damage = Math.round(damage);
+        }
 
         Building building = new Building(
                 name,
                 x, y,
                 isPlayer,
-                card.getHealth(),
-                card.getDamage(),
+                health,
+                damage,
                 card.getRange(),
                 card.getHitSpeed(),
                 getLifetime(name),
