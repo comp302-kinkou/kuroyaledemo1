@@ -38,6 +38,9 @@ public class GameView {
     private Label messageLabel;
     private Label timerLabel;
     private Button btnPause;
+    private Button btnSpeed;
+    private Label playerScoreLabel;
+    private Label enemyScoreLabel;
 
     private static final double TILE_SIZE = 20.0; // Scale factor
 
@@ -66,15 +69,30 @@ public class GameView {
             updatePauseButton();
         });
 
+        btnSpeed = new Button("1x");
+        btnSpeed.setOnAction(e -> {
+            toggleSpeed();
+        });
+
+        playerScoreLabel = new Label("Player: 0");
+        playerScoreLabel
+                .setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: cyan; -fx-padding: 0 10 0 0;");
+
+        enemyScoreLabel = new Label("Enemy: 0");
+        enemyScoreLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: orange;");
+
         messageLabel = new Label("Select a card and click on arena to spawn!");
         timerLabel = new Label("Time: 3:00");
-        timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         // Spacer
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
-        topBar.getChildren().addAll(btnExit, btnPause, messageLabel, spacer, timerLabel);
+        // Layout: [Player Score] [Buttons...] [Message] [Spacer] [Timer] [Enemy Score]
+        topBar.getChildren().addAll(playerScoreLabel, btnExit, btnPause, btnSpeed, messageLabel, spacer, timerLabel,
+                enemyScoreLabel);
+        topBar.setStyle("-fx-background-color: #222;"); // Darker top bar
         root.setTop(topBar);
 
         // --- Center: Arena Canvas ---
@@ -123,6 +141,7 @@ public class GameView {
         controller.startGame();
         updateHandView();
         updatePauseButton();
+        updateSpeedButton();
 
         // Create GameLoop for game state updates
         gameLoop = new GameLoop(controller);
@@ -159,7 +178,7 @@ public class GameView {
 
     private void updateHUD() {
         ElixirManager em = controller.getElixirManager();
-        elixirLabel.setText("Elixir: " + em.getElixir());
+        elixirLabel.setText("Elixir: " + em.getElixir() + "/10");
         elixirBar.setProgress(em.getExactElixir() / 10.0);
 
         // Update Timer
@@ -171,6 +190,21 @@ public class GameView {
         if (time <= 0) {
             messageLabel.setText("GAME OVER!");
         }
+
+        // Update Crown Score
+        int playerCrowns = 0;
+        int enemyCrowns = 0;
+        for (Tower tower : controller.getArena().getTowers()) {
+            if (tower.isDestroyed()) {
+                if (tower.isPlayer()) {
+                    enemyCrowns++;
+                } else {
+                    playerCrowns++;
+                }
+            }
+        }
+        playerScoreLabel.setText("Player: " + playerCrowns);
+        enemyScoreLabel.setText("Enemy: " + enemyCrowns);
 
         // Check if we need to refresh hand (e.g. after playing a card)
         // For simplicity, we can refresh every frame or check a flag.
@@ -344,6 +378,24 @@ public class GameView {
             gc.setFill(Color.rgb(255, 255, 0, alpha * 0.7));
             double r = effect.getRadius() * TILE_SIZE;
             gc.fillOval(effect.getX() * TILE_SIZE - r, effect.getY() * TILE_SIZE - r, r * 2, r * 2);
+        }
+    }
+
+    private void toggleSpeed() {
+        if (controller.getTimeScale() == 1.0) {
+            controller.setTimeScale(2.0);
+        } else {
+            controller.setTimeScale(1.0);
+        }
+        updateSpeedButton();
+    }
+
+    private void updateSpeedButton() {
+        double scale = controller.getTimeScale();
+        if (scale == 1.0) {
+            btnSpeed.setText("1x");
+        } else {
+            btnSpeed.setText("2x");
         }
     }
 }

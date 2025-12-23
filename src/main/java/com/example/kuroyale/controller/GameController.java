@@ -27,6 +27,8 @@ public class GameController {
     // it in
     // In this design, the GameController owns the game state.
 
+    private double timeScale = 1.0;
+
     private GameController() {
         this.deck = new Deck();
         this.arena = new Arena();
@@ -39,6 +41,7 @@ public class GameController {
         this.gameTime = 180.0; // 3 minutes
         this.isPaused = false;
         this.gameResult = null;
+        this.timeScale = 1.0;
 
         initializeCards(); // Populate the deck with available cards
     }
@@ -50,12 +53,37 @@ public class GameController {
         return instance;
     }
 
+    public void setTimeScale(double scale) {
+        this.timeScale = scale;
+    }
+
+    public double getTimeScale() {
+        return timeScale;
+    }
+
     private void initializeCards() {
-        // Initialize deck with first 8 cards from library by default
+        // Initialize deck with specific cards including Spear Goblins
         List<Card> library = CardLibrary.getAllCards();
-        for (int i = 0; i < 8 && i < library.size(); i++) {
-            deck.addCard(library.get(i));
+        deck.clear();
+
+        // Explicitly trying to find Spear Goblins to include
+        Card spearGoblins = CardLibrary.getCardByName("Spear Goblins");
+        if (spearGoblins != null) {
+            deck.addCard(spearGoblins);
         }
+
+        // Fill the rest with other available cards
+        for (Card card : library) {
+            if (deck.getCards().size() >= 8)
+                break;
+            // distinct check not strictly needed as library is unique and we just cleared
+            // deck,
+            // but we don't want to add Spear Goblins twice if we iterate over it
+            if (!deck.getCards().contains(card)) {
+                deck.addCard(card);
+            }
+        }
+
         deck.initializeGameDeck();
     }
 
@@ -73,6 +101,7 @@ public class GameController {
         activeBuildings.clear();
         activeEffects.clear();
         elixirManager = new ElixirManager(); // Reset elixir
+        timeScale = 1.0; // Reset speed
 
         // Only set default if no towers exist (i.e. not customized)
         if (arena.getTowers().isEmpty()) {
@@ -97,24 +126,27 @@ public class GameController {
         if (!isGameRunning || isPaused)
             return;
 
-        gameTime -= deltaTime;
+        // Apply time scale
+        double scaledDeltaTime = deltaTime * timeScale;
+
+        gameTime -= scaledDeltaTime;
 
         // 1. Update Elixir
-        elixirManager.update(deltaTime);
+        elixirManager.update(scaledDeltaTime);
 
         // 2. Update Units (Movement and Attack)
         for (Unit unit : activeUnits) {
-            unitController.updateUnitBehavior(unit, deltaTime);
+            unitController.updateUnitBehavior(unit, scaledDeltaTime);
         }
 
         // 3. Update Buildings (Attack, Spawn, Elixir Generation, Lifetime)
         for (Building building : activeBuildings) {
-            updateBuildingBehavior(building, deltaTime);
+            updateBuildingBehavior(building, scaledDeltaTime);
         }
 
         // 4. Update Towers (Attack)
         for (Tower tower : arena.getTowers()) {
-            updateTowerBehavior(tower, deltaTime);
+            updateTowerBehavior(tower, scaledDeltaTime);
         }
 
         // 5. Remove dead units and expired/destroyed buildings
