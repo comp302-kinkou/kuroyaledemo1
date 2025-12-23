@@ -14,6 +14,7 @@ public class GameController {
     private ElixirManager elixirManager;
     private List<Unit> activeUnits;
     private List<Building> activeBuildings;
+    private List<Effect> activeEffects;
     private boolean isGameRunning;
     private UnitController unitController;
 
@@ -32,6 +33,7 @@ public class GameController {
         this.elixirManager = new ElixirManager();
         this.activeUnits = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
+        this.activeEffects = new ArrayList<>();
         this.isGameRunning = false;
         this.unitController = new UnitController(this, this.arena);
         this.gameTime = 180.0; // 3 minutes
@@ -69,6 +71,7 @@ public class GameController {
         gameResult = null;
         activeUnits.clear();
         activeBuildings.clear();
+        activeEffects.clear();
         elixirManager = new ElixirManager(); // Reset elixir
 
         // Only set default if no towers exist (i.e. not customized)
@@ -117,6 +120,12 @@ public class GameController {
         // 5. Remove dead units and expired/destroyed buildings
         activeUnits.removeIf(Unit::isDead);
         activeBuildings.removeIf(Building::isDestroyed);
+
+        // Update Effects
+        for (Effect effect : activeEffects) {
+            effect.update(deltaTime);
+        }
+        activeEffects.removeIf(Effect::isExpired);
 
         // 6. Check win conditions (after all updates to catch tower destruction)
         checkWinConditions();
@@ -173,11 +182,27 @@ public class GameController {
         // 1. Lifetime decay
         building.update(deltaTime);
 
-        // 2. Spawner logic (if applicable)
-        // (Simplified: just print for now or implement if Building has spawn logic)
-        // For this demo, we assume Building handles its own internal logic in update()
-        // But we might need to handle spawning here if Building just stores data.
-        // Let's assume Building.update() handles lifetime.
+        // 2. Spawner logic
+        if (building.isSpawner() && building.shouldSpawn()) {
+            String unitName = building.getSpawnedUnitType();
+            Card unitCard = CardLibrary.getCardByName(unitName);
+
+            if (unitCard != null) {
+                // Determine spawn position (slightly offset so it doesn't look like it's inside
+                // the building)
+                // Spawn in front of building relative to player side
+                double spawnX = building.getX();
+                double spawnY = building.getY() + (building.isPlayer() ? -1.0 : 1.0);
+
+                // Create the unit
+                // For now, we spawn at base level (or we could store building level later)
+                Unit spawnedUnit = UnitFactory.createUnit(unitCard, spawnX, spawnY, building.isPlayer());
+
+                activeUnits.add(spawnedUnit);
+                System.out
+                        .println(building.getName() + " spawned " + unitName + " at (" + spawnX + ", " + spawnY + ")");
+            }
+        }
 
         // 3. Defensive Building Attack
         if (building.getDamage() > 0) {
@@ -223,7 +248,7 @@ public class GameController {
         double radius = card.getRange();
         double radiusSq = radius * radius;
         double damage = card.getDamage();
-        
+
         // Apply level bonuses if progression is provided
         if (progression != null) {
             damage = progression.applyLevelBonus(damage);
@@ -266,6 +291,9 @@ public class GameController {
                 }
             }
         }
+
+        // Add visual effect
+        activeEffects.add(new Effect(x, y, 1.0, "SPELL", radius));
     }
 
     /**
@@ -297,21 +325,21 @@ public class GameController {
             case "TROOP":
                 Unit newUnit = UnitFactory.createUnit(card, x, y, true, progression);
                 activeUnits.add(newUnit);
-                System.out.println("Troop spawned: " + card.getName() + " (Level " + 
-                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+                System.out.println("Troop spawned: " + card.getName() + " (Level " +
+                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "BUILDING":
                 Building newBuilding = BuildingFactory.createBuilding(card, x, y, true, progression);
                 activeBuildings.add(newBuilding);
-                System.out.println("Building placed: " + card.getName() + " (Level " + 
-                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+                System.out.println("Building placed: " + card.getName() + " (Level " +
+                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "SPELL":
                 applySpellDamage(card, x, y, progression);
-                System.out.println("Spell cast: " + card.getName() + " (Level " + 
-                    (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+                System.out.println("Spell cast: " + card.getName() + " (Level " +
+                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             default:
@@ -340,6 +368,10 @@ public class GameController {
 
     public List<Building> getActiveBuildings() {
         return activeBuildings;
+    }
+
+    public List<Effect> getActiveEffects() {
+        return activeEffects;
     }
 
     public boolean isGameRunning() {

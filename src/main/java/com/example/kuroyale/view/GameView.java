@@ -133,8 +133,8 @@ public class GameView {
             @Override
             public void handle(long now) {
                 gameLoop.update(now); // Update game state
-                render();              // Render graphics
-                updateHUD();           // Update HUD
+                render(); // Render graphics
+                updateHUD(); // Update HUD
             }
         };
         animationTimer.start();
@@ -335,6 +335,15 @@ public class GameView {
             gc.setFill(unit.isPlayer() ? Color.CYAN : Color.MAGENTA);
             double size = 0.8 * TILE_SIZE;
             gc.fillOval(unit.getX() * TILE_SIZE - size / 2, unit.getY() * TILE_SIZE - size / 2, size, size);
+        }
+
+        // Draw Effects
+        for (Effect effect : controller.getActiveEffects()) {
+            double alpha = effect.getDuration() / effect.getMaxDuration();
+            // Yellow explosion
+            gc.setFill(Color.rgb(255, 255, 0, alpha * 0.7));
+            double r = effect.getRadius() * TILE_SIZE;
+            gc.fillOval(effect.getX() * TILE_SIZE - r, effect.getY() * TILE_SIZE - r, r * 2, r * 2);
         }
     }
 }
