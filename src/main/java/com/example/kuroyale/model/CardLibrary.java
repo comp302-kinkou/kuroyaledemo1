@@ -134,4 +134,51 @@ public class CardLibrary {
                 }
                 return null;
         }
+
+        // Gets the rarity of a card by its name.
+        public static CardRarity getCardRarity(String cardName) {
+                // Common cards (12 total)
+                String[] commonCards = {
+                                "Skeletons", "Goblins", "Spear Goblins", "Archers", "Knight", "Bomber",
+                                "Cannon", "Tombstone", "Arrows", "Zap"
+                };
+                for (String name : commonCards) {
+                        if (name.equalsIgnoreCase(cardName)) {
+                                return CardRarity.COMMON;
+                        }
+                }
+
+                // Rare cards (10 total)
+                String[] rareCards = {
+                                "Musketeer", "Mini P.E.K.K.A", "Valkyrie", "Minions", "Barbarians",
+                                "Tesla", "Mortar", "Goblin Hut", "Fireball"
+                };
+                for (String name : rareCards) {
+                        if (name.equalsIgnoreCase(cardName)) {
+                                return CardRarity.RARE;
+                        }
+                }
+
+                // Epic cards (4 total)
+                String[] epicCards = {
+                                "Giant", "Wizard", "Bomb Tower", "Inferno Tower"
+                };
+                for (String name : epicCards) {
+                        if (name.equalsIgnoreCase(cardName)) {
+                                return CardRarity.EPIC;
+                        }
+                }
+
+                // Legendary cards (2 total)
+                String[] legendaryCards = {
+                                "Hog Rider", "Minion Horde"
+                };
+                for (String name : legendaryCards) {
+                        if (name.equalsIgnoreCase(cardName)) {
+                                return CardRarity.LEGENDARY;
+                        }
+                }
+
+                return null; // Card not found
+        }
 }
