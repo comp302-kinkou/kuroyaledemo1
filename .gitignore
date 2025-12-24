@@ -3,3 +3,6 @@ src/test/
 .idea/
 *.iml
 .DS_Store
+*.pdf
+*.py
+*.txt
