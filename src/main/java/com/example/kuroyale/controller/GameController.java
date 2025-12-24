@@ -3,8 +3,10 @@ package com.example.kuroyale.controller;
 import com.example.kuroyale.model.*;
 import com.example.kuroyale.model.challenge.Challenge;
 import com.example.kuroyale.model.challenge.ChallengeManager;
+import com.example.kuroyale.model.persistence.*;
 import java.util.ArrayList;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 public class GameController {
@@ -30,6 +32,44 @@ public class GameController {
     private boolean isPaused;
     private String gameResult; // "WIN", "LOSS", "DRAW", or null if game is ongoing
 
+    // Persistence Data
+    private PlayerProfile playerProfile;
+    private QuestData questData;
+    private Map<String, CardProgression> cardProgressions;
+    private static final String SAVE_FILE = "savegame.dat";
+
+    public void saveGame() {
+        GameData data = new GameData();
+        data.setPlayerProfile(playerProfile);
+        data.setQuestData(questData);
+        data.setCardProgressions(new ArrayList<>(cardProgressions.values()));
+        data.setChallengeData(ChallengeManager.getInstance().exportData());
+
+        PersistenceManager.getInstance().save(data, SAVE_FILE);
+    }
+
+    public void loadGame() {
+        GameData data = PersistenceManager.getInstance().load(SAVE_FILE);
+        if (data != null) {
+            this.playerProfile = data.getPlayerProfile();
+            this.questData = data.getQuestData();
+
+            this.cardProgressions.clear();
+            for (CardProgression cp : data.getCardProgressions()) {
+                this.cardProgressions.put(cp.getCardName(), cp);
+            }
+
+            ChallengeManager.getInstance().importData(data.getChallengeData());
+            System.out.println("Game loaded.");
+        } else {
+            System.out.println("No save file found. Using defaults.");
+        }
+    }
+
+    public PlayerProfile getPlayerProfile() {
+        return playerProfile;
+    }
+
     // For demo purposes, we might want to access the player's deck globally or pass
     // it in
     // In this design, the GameController owns the game state.
@@ -53,6 +93,15 @@ public class GameController {
         this.timeScale = 1.0;
         this.isDeckSaved = false;
         this.isArenaSaved = false;
+
+        this.playerProfile = new PlayerProfile();
+        this.questData = new QuestData();
+        this.cardProgressions = new HashMap<>();
+
+        // Try to load game strictly on startup? Or maybe call loadGame() explicitly.
+        // For now, let's just initialize default empty structures.
+        // Actually, let's try to load automatically for convenience.
+        loadGame();
 
         initializeCards(); // Populate the deck with available cards
     }
@@ -363,12 +412,21 @@ public class GameController {
 
     /**
      * Gets the CardProgression for a card based on its rarity.
-     * Currently returns Level 1 progression (upgrade system to be added later).
+     * Returns stored progression or creates new default Level 1 progression.
      */
-    private CardProgression getCardProgression(Card card) {
+    public CardProgression getCardProgression(Card card) {
+        if (card == null)
+            return null;
+
+        if (cardProgressions.containsKey(card.getName())) {
+            return cardProgressions.get(card.getName());
+        }
+
         CardRarity rarity = CardLibrary.getCardRarity(card.getName());
         if (rarity != null) {
-            return new CardProgression(card.getName(), rarity);
+            CardProgression cp = new CardProgression(card.getName(), rarity);
+            cardProgressions.put(card.getName(), cp);
+            return cp;
         }
         return null; // Card not found in library
     }

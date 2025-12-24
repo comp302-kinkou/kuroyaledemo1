@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.example.kuroyale.model.persistence.ChallengeData;
 
 public class ChallengeManager {
     private static ChallengeManager instance;
@@ -93,5 +94,28 @@ public class ChallengeManager {
                 break;
             }
         }
+    }
+
+    public ChallengeData exportData() {
+        ChallengeData data = new ChallengeData();
+        data.setUnlockedChallenges(new HashMap<>(unlockedChallenges));
+        data.setCompletedChallenges(new HashMap<>(completedChallenges));
+        data.setStarsEarned(new HashMap<>(starsEarned));
+        // Note: bestTimes is not currently tracked in ChallengeManager but added to
+        // Data model for future proofing
+        return data;
+    }
+
+    public void importData(ChallengeData data) {
+        if (data == null)
+            return;
+        this.unlockedChallenges.clear();
+        this.unlockedChallenges.putAll(data.getUnlockedChallenges());
+
+        this.completedChallenges.clear();
+        this.completedChallenges.putAll(data.getCompletedChallenges());
+
+        this.starsEarned.clear();
+        this.starsEarned.putAll(data.getStarsEarned());
     }
 }
