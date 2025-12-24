@@ -98,6 +98,9 @@ public class GameController {
         this.questData = new QuestData();
         this.cardProgressions = new HashMap<>();
 
+        // Load Network Config at startup
+        com.example.kuroyale.config.NetworkConfig.getInstance();
+
         // Try to load game strictly on startup? Or maybe call loadGame() explicitly.
         // For now, let's just initialize default empty structures.
         // Actually, let's try to load automatically for convenience.
