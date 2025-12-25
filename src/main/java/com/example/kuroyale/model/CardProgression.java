@@ -38,13 +38,6 @@ public class CardProgression implements Serializable {
 
     // Upgrades the card to the next level if possible.
     public boolean upgrade() {
-        if (level < 3) {
-            // Note: Gold deduction and tracking should be handled by the controller/manager
-            // invoking this.
-            // But we can record the cost if we assume the upgrade is successful and paid
-            // for.
-            // However, upgrade() here is just logic. Let's provide a setter or adder for
-            // gold spent.
             level++;
             return true;
         }

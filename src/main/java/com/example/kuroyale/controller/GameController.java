@@ -434,6 +434,27 @@ public class GameController {
         return null; // Card not found in library
     }
 
+    //Upgrades a card to the next level if the player has enough gold.
+    public boolean upgradeCard(Card card) {
+        if (card == null || playerProfile == null) {
+            return false;
+        }
+
+        CardProgression progression = getCardProgression(card);
+        if (progression == null || !progression.canUpgrade()) {
+            return false;
+        }
+
+        int cost = progression.getUpgradeCost();
+        if (playerProfile.spendGold(cost)) {
+            progression.upgrade();
+            progression.addGoldSpent(cost);
+            saveGame(); // Auto-save after upgrade
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Play a card at the specified position
      * Handles different card types: TROOP, BUILDING, SPELL
