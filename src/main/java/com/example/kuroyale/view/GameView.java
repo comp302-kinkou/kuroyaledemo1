@@ -242,19 +242,31 @@ public class GameView {
 
         for (int i = 0; i < hand.size(); i++) {
             Card card = hand.get(i);
-            Button btnCard = new Button(card.getName() + "\n(" + card.getElixirCost() + ")");
-            btnCard.setPrefSize(80, 80);
+            CardProgression progression = controller.getCardProgression(card);
+            CardRarity rarity = CardLibrary.getCardRarity(card.getName());
+            
+            // Build button text with level indicator
+            String levelStars = getLevelStars(progression != null ? progression.getLevel() : 1);
+            Button btnCard = new Button(card.getName() + "\n(" + card.getElixirCost() + ")\n" + levelStars);
+            btnCard.setPrefSize(80, 90);
 
+            // Apply rarity border color
+            String rarityColor = getRarityBorderColor(rarity);
+            String baseStyle = "-fx-border-color: " + rarityColor + "; -fx-border-width: 2px; -fx-font-size: 10px;";
+            
             int index = i;
             btnCard.setOnAction(e -> {
                 selectedCard = card;
                 selectedHandIndex = index;
-                messageLabel.setText("Selected: " + card.getName());
+                messageLabel.setText("Selected: " + card.getName() + " (Level " + 
+                    (progression != null ? progression.getLevel() : 1) + ")");
             });
 
-            // Highlight selected
+            // Highlight selected with blue border, otherwise use rarity color
             if (selectedHandIndex == i) {
-                btnCard.setStyle("-fx-border-color: blue; -fx-border-width: 3px;");
+                btnCard.setStyle(baseStyle + " -fx-border-color: blue; -fx-border-width: 3px;");
+            } else {
+                btnCard.setStyle(baseStyle);
             }
 
             handBox.getChildren().add(btnCard);
@@ -263,8 +275,42 @@ public class GameView {
         // Next Card
         Card next = deck.getNextCard();
         if (next != null) {
-            Label nextLabel = new Label("Next:\n" + next.getName());
+            CardProgression nextProgression = controller.getCardProgression(next);
+            String nextLevelStars = getLevelStars(nextProgression != null ? nextProgression.getLevel() : 1);
+            Label nextLabel = new Label("Next:\n" + next.getName() + "\n" + nextLevelStars);
+            nextLabel.setStyle("-fx-font-size: 11px; -fx-text-alignment: center;");
             handBox.getChildren().add(nextLabel);
+        }
+    }
+
+    private String getRarityBorderColor(CardRarity rarity) {
+        if (rarity == null)
+            return "#808080"; // Gray default
+
+        switch (rarity) {
+            case COMMON:
+                return "#C0C0C0"; // Gray/White
+            case RARE:
+                return "#4169E1"; // Blue
+            case EPIC:
+                return "#9370DB"; // Purple
+            case LEGENDARY:
+                return "#FF8C00"; // Orange/Gold
+            default:
+                return "#808080";
+        }
+    }
+
+    private String getLevelStars(int level) {
+        switch (level) {
+            case 1:
+                return "★";
+            case 2:
+                return "★★";
+            case 3:
+                return "★★★";
+            default:
+                return "";
         }
     }
 

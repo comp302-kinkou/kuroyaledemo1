@@ -175,8 +175,8 @@ public class DeckBuilderView {
         alert.showAndWait();
     }
 
-    // Custom Cell Factory to display Card info nicely
-    private static class CardCellFactory implements Callback<ListView<Card>, ListCell<Card>> {
+    // Custom Cell Factory to display Card info nicely with rarity and level
+    private class CardCellFactory implements Callback<ListView<Card>, ListCell<Card>> {
         @Override
         public ListCell<Card> call(ListView<Card> param) {
             return new ListCell<Card>() {
@@ -185,15 +185,60 @@ public class DeckBuilderView {
                     super.updateItem(item, empty);
                     if (empty || item == null) {
                         setText(null);
+                        setStyle("");
                     } else {
+                        CardProgression progression = controller.getCardProgression(item);
+                        CardRarity rarity = CardLibrary.getCardRarity(item.getName());
+                        int level = progression != null ? progression.getLevel() : 1;
+                        String levelStars = getLevelStars(level);
+                        
                         String text = item.getName() + " (" + item.getElixirCost() + ") - " + item.getType();
                         if (CardLibrary.isSwarmCard(item.getName())) {
                             text += " (Swarm)";
                         }
+                        text += " | Level " + level + " " + levelStars;
+                        if (rarity != null) {
+                            text += " [" + rarity.getDisplayName() + "]";
+                        }
                         setText(text);
+                        
+                        // Apply rarity border color
+                        String rarityColor = getRarityBorderColor(rarity);
+                        setStyle("-fx-border-color: " + rarityColor + "; -fx-border-width: 2px; -fx-padding: 5px;");
                     }
                 }
             };
+        }
+    }
+
+    private String getRarityBorderColor(CardRarity rarity) {
+        if (rarity == null)
+            return "#808080"; // Gray default
+
+        switch (rarity) {
+            case COMMON:
+                return "#C0C0C0"; // Gray/White
+            case RARE:
+                return "#4169E1"; // Blue
+            case EPIC:
+                return "#9370DB"; // Purple
+            case LEGENDARY:
+                return "#FF8C00"; // Orange/Gold
+            default:
+                return "#808080";
+        }
+    }
+
+    private String getLevelStars(int level) {
+        switch (level) {
+            case 1:
+                return "★";
+            case 2:
+                return "★★";
+            case 3:
+                return "★★★";
+            default:
+                return "";
         }
     }
 }

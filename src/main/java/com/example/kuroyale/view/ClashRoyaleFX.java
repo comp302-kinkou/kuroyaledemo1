@@ -46,6 +46,12 @@ public class ClashRoyaleFX extends Application {
         primaryStage.setScene(view.createScene());
     }
 
+    public void showCardUpgrade() {
+        CardUpgradeView view = new CardUpgradeView(this);
+        Scene scene = new Scene(view.getView(), 1000, 700);
+        primaryStage.setScene(scene);
+    }
+
     public static void main(String[] args) {
         launch(args);
     }

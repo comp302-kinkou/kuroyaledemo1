@@ -51,12 +51,16 @@ public class MainMenuView {
         btnChallengeMode.setOnAction(e -> mainApp.showChallengeSelection());
         btnChallengeMode.setMaxWidth(200);
 
+        Button btnCardUpgrade = new Button("Upgrade Cards");
+        btnCardUpgrade.setOnAction(e -> mainApp.showCardUpgrade());
+        btnCardUpgrade.setMaxWidth(200);
+
         Button btnExit = new Button("Exit");
         btnExit.setOnAction(e -> System.exit(0));
         btnExit.setMaxWidth(200);
 
         root.getChildren().addAll(titleLabel, goldLabel, btnDeckBuilder, btnArenaDesigner, btnStartGame,
-                btnChallengeMode,
+                btnChallengeMode, btnCardUpgrade,
                 btnExit);
         return root;
     }
