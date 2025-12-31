@@ -4,6 +4,8 @@ import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.model.Card;
 import com.example.kuroyale.model.CardLibrary;
 import com.example.kuroyale.model.Deck;
+import com.example.kuroyale.model.CardProgression;
+import com.example.kuroyale.model.CardRarity;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -191,7 +193,7 @@ public class DeckBuilderView {
                         CardRarity rarity = CardLibrary.getCardRarity(item.getName());
                         int level = progression != null ? progression.getLevel() : 1;
                         String levelStars = getLevelStars(level);
-                        
+
                         String text = item.getName() + " (" + item.getElixirCost() + ") - " + item.getType();
                         if (CardLibrary.isSwarmCard(item.getName())) {
                             text += " (Swarm)";
@@ -201,7 +203,7 @@ public class DeckBuilderView {
                             text += " [" + rarity.getDisplayName() + "]";
                         }
                         setText(text);
-                        
+
                         // Apply rarity border color
                         String rarityColor = getRarityBorderColor(rarity);
                         setStyle("-fx-border-color: " + rarityColor + "; -fx-border-width: 2px; -fx-padding: 5px;");

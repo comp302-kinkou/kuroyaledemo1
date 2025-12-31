@@ -38,6 +38,7 @@ public class CardProgression implements Serializable {
 
     // Upgrades the card to the next level if possible.
     public boolean upgrade() {
+        if (canUpgrade()) {
             level++;
             return true;
         }
