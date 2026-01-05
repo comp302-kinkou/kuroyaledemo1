@@ -4,18 +4,67 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Represents a deck of cards in the game.
+ * ADT Overview: Mutable, represents a collection of Card objects with a hand
+ * subset.
+ * 
+ * Abstraction Function:
+ * AF(c) = A deck d where
+ * d.allCards = c.cards
+ * d.hand = c.hand
+ * d.drawPile = c.drawPile
+ * d.next = c.nextCard
+ * 
+ * Rep Invariant:
+ * cards != null
+ * hand != null
+ * drawPile != null
+ * cards.size() <= 8
+ * hand.size() <= 4
+ * hand elements are subset of cards
+ */
 public class Deck {
     private List<Card> cards = new ArrayList<>();
     private List<Card> hand = new ArrayList<>();
     private List<Card> drawPile = new ArrayList<>();
     private Card nextCard;
 
+    /**
+     * Checks if the representation invariant holds.
+     * 
+     * @return true if the rep is valid, false otherwise.
+     */
+    public boolean repOk() {
+        if (cards == null || hand == null || drawPile == null)
+            return false;
+        if (cards.size() > 8)
+            return false;
+        if (hand.size() > 4)
+            return false;
+        // Check if hand cards are in main deck
+        for (Card c : hand) {
+            if (!cards.contains(c))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Adds a card to the deck.
+     * 
+     * Requires: card is not null
+     * Modifies: this.cards
+     * Effects: If cards.size() < 8, adds card to cards and returns true.
+     * Otherwise returns false.
+     */
     public boolean addCard(Card card) {
         if (cards.size() >= 8) {
             // System.out.println("Deck full! (Max 8 cards)");
             return false;
         }
         cards.add(card);
+        // assert repOk();
         return true;
     }
 
@@ -42,6 +91,7 @@ public class Deck {
         if (!drawPile.isEmpty()) {
             nextCard = drawPile.remove(0);
         }
+        // assert repOk();
     }
 
     public Card getCardInHand(int index) {
@@ -55,6 +105,16 @@ public class Deck {
         return nextCard;
     }
 
+    /**
+     * Plays a card from the hand.
+     * 
+     * Requires: handIndex larger or equal to 0 and smaller than hand.size()
+     * Modifies: this.hand, this.drawPile, this.nextCard
+     * Effects: Removes the card at handIndex from hand.
+     * Adds the played card to the bottom of drawPile.
+     * Moves nextCard to hand at handIndex.
+     * If it is available, draws a new nextCard from drawPile.
+     */
     public void playCard(int handIndex) {
         if (handIndex >= 0 && handIndex < hand.size()) {
             Card played = hand.get(handIndex);
@@ -73,6 +133,7 @@ public class Deck {
                 nextCard = drawPile.remove(0);
             }
         }
+        // assert repOk();
     }
 
     public List<Card> getCards() {
