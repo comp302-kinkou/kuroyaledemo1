@@ -15,12 +15,20 @@ public class DeckTest {
 
     @Test
     public void testRepOkOnEmpty() {
+        // Test Case 1: Verify Rep Invariant on a fresh, empty deck.
+        // Input: New Deck().
+        // Expected Output: repOk() returns true.
+
         // RI: cards != null, size <= 8
         assertTrue(deck.repOk(), "Empty deck should satisfy rep invariant");
     }
 
     @Test
     public void testAddCardSuccess() {
+        // Test Case 2: Verify adding a valid card to a non-full deck.
+        // Input: A valid Card object.
+        // Expected Output: addCard() returns true, size increments, RI holds.
+
         Card c1 = new Card("Knight", 3, "TROOP", 2.0, 100, 1.0, 1.0, 1000, "");
 
         // Requires: c1 != null
@@ -34,6 +42,10 @@ public class DeckTest {
 
     @Test
     public void testAddCardFull() {
+        // Test Case 3: Verify boundary condition when adding to a full deck.
+        // Input: Deck with 8 cards, attempt to add 9th card.
+        // Expected Output: addCard() returns false, size remains 8, RI holds.
+
         // Fill deck with 8 cards
         for (int i = 0; i < 8; i++) {
             deck.addCard(new Card("Card" + i, 3, "TROOP", 2.0, 100, 1.0, 1.0, 1000, ""));
@@ -50,6 +62,11 @@ public class DeckTest {
 
     @Test
     public void testPlayCardEffect() {
+        // Test Case 4: Verify playCard functionality and side effects.
+        // Input: Full initialized deck, play card at index 0.
+        // Expected Output: Card moves from hand to drawPile, nextCard moves to hand,
+        // new nextCard drawn.
+
         setupFullDeck();
         deck.initializeGameDeck();
 
@@ -63,7 +80,6 @@ public class DeckTest {
         // Requires: 0 <= index < 4
         deck.playCard(0);
 
-        // Effects Check:
         // 1. Old firstInHand should be at bottom of drawPile (not easily visible via
         // public API, but inferred)
         // 2. Old 'nextCard' should now be in hand at index 0

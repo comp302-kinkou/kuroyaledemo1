@@ -64,7 +64,7 @@ public class Deck {
             return false;
         }
         cards.add(card);
-        // assert repOk();
+        assert repOk();
         return true;
     }
 
@@ -91,7 +91,7 @@ public class Deck {
         if (!drawPile.isEmpty()) {
             nextCard = drawPile.remove(0);
         }
-        // assert repOk();
+        assert repOk();
     }
 
     public Card getCardInHand(int index) {
@@ -133,7 +133,7 @@ public class Deck {
                 nextCard = drawPile.remove(0);
             }
         }
-        // assert repOk();
+        assert repOk();
     }
 
     public List<Card> getCards() {

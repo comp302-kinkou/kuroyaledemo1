@@ -85,6 +85,10 @@ public class Unit {
         return isPlayer;
     }
 
+    public double getHealth() {
+        return health;
+    }
+
     public double getDamage() {
         return damage;
     }
