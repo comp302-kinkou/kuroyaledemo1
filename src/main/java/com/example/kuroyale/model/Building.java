@@ -48,6 +48,18 @@ public class Building {
         this.targetType = targetType;
     }
 
+    /**
+     * Updates the state of the building based on the elapsed time.
+     * 
+     * Requires: deltaTime >= 0
+     * Modifies: this.timeAlive, this.destroyed, this.timeSinceLastSpawn,
+     * this.timeSinceLastElixir
+     * Effects:
+     * - Increments timeAlive by deltaTime.
+     * - If timeAlive >= lifetime, sets destroyed to true.
+     * - If the building is a spawner, increments timeSinceLastSpawn.
+     * - If the building is an elixir collector, increments timeSinceLastElixir.
+     */
     public void update(double deltaTime) {
         updateLifetime(deltaTime);
         if (isExpired()) {
