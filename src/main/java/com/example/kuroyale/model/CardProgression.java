@@ -5,6 +5,25 @@ import java.io.Serializable;
 public class CardProgression implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    /**
+     * ADT Overview: Mutable, represents the progression state of a card in the
+     * game.
+     * Manages level, total gold spent, and rarity.
+     * 
+     * Abstraction Function:
+     * AF(c) = A card progression p where
+     * p.name = c.cardName
+     * p.level = c.level
+     * p.rarity = c.rarity
+     * p.goldSpent = c.totalGoldSpent
+     * 
+     * Rep Invariant:
+     * cardName != null
+     * rarity != null
+     * 1 <= level <= 3
+     * totalGoldSpent >= 0
+     */
+
     private String cardName;
     private int level; // 1, 2, or 3
     private CardRarity rarity;
@@ -15,6 +34,7 @@ public class CardProgression implements Serializable {
         this.rarity = rarity;
         this.level = 1; // All cards start at Level 1
         this.totalGoldSpent = 0;
+        assert repOk();
     }
 
     public CardProgression(String cardName, CardRarity rarity, int level) {
@@ -22,6 +42,7 @@ public class CardProgression implements Serializable {
         this.rarity = rarity;
         this.level = Math.max(1, Math.min(3, level)); // Clamp between 1 and 3
         this.totalGoldSpent = 0;
+        assert repOk();
     }
 
     public String getCardName() {
@@ -36,10 +57,28 @@ public class CardProgression implements Serializable {
         return rarity;
     }
 
+    /**
+     * Checks if the representation invariant holds.
+     * 
+     * @return true if the rep is valid, false otherwise.
+     */
+    public boolean repOk() {
+        if (cardName == null)
+            return false;
+        if (rarity == null)
+            return false;
+        if (level < 1 || level > 3)
+            return false;
+        if (totalGoldSpent < 0)
+            return false;
+        return true;
+    }
+
     // Upgrades the card to the next level if possible.
     public boolean upgrade() {
         if (canUpgrade()) {
             level++;
+            assert repOk();
             return true;
         }
         return false;
@@ -47,6 +86,7 @@ public class CardProgression implements Serializable {
 
     public void addGoldSpent(int amount) {
         this.totalGoldSpent += amount;
+        assert repOk();
     }
 
     public int getTotalGoldSpent() {
