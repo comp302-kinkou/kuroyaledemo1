@@ -91,6 +91,77 @@ public class DeckTest {
         assertTrue(deck.repOk());
     }
 
+    @Test
+    public void testPlayCardInvalidIndex() {
+        // Test Case 5: Verify playCard with invalid indices.
+        // Input: playCard(-1) and playCard(10).
+        // Expected Output: No change in state (Hand, DrawPile, NextCard remain same),
+        // RI holds.
+
+        setupFullDeck();
+        deck.initializeGameDeck();
+
+        Card initialFirst = deck.getCardInHand(0);
+        Card initialNext = deck.getNextCard();
+        int initialDrawSize = deck.getCards().size() - 5; // Total - Hand(4) - Next(1)
+
+        // Invalid Low
+        deck.playCard(-1);
+        assertEquals(initialFirst, deck.getCardInHand(0), "Hand should not change on invalid index");
+        assertEquals(initialNext, deck.getNextCard(), "Next card should not change");
+
+        // Invalid High
+        deck.playCard(10);
+        assertEquals(initialFirst, deck.getCardInHand(0), "Hand should not change on invalid index");
+        assertEquals(initialNext, deck.getNextCard(), "Next card should not change");
+
+        assertTrue(deck.repOk());
+    }
+
+    @Test
+    public void testPlayCardCycleSequence() {
+        // Test Case 6: Verify preservation of card order over multiple plays (FIFO
+        // Cycle).
+        // Context: Full Deck (8 cards).
+        // Input: Play 5 cards sequentially.
+        // Expected Output: The first card played should eventually return to be the
+        // 'Next' card.
+
+        // Setup distinct cards to track order
+        deck = new Deck();
+        Card[] specificCards = new Card[8];
+        for (int i = 0; i < 8; i++) {
+            specificCards[i] = new Card("Unique" + i, 3, "TROOP", 1, 1, 1, 1, 1, "");
+            deck.addCard(specificCards[i]);
+        }
+
+        deck.initializeGameDeck();
+        Card firstPlayed = deck.getCardInHand(0); // This is the card we will play
+
+        // Play 1st card
+        deck.playCard(0);
+        // State: firstPlayed is now at bottom of drawPile.
+        // DrawPile size: 3 cards.
+
+        // To get 'firstPlayed' back to 'Next' position, we need to exhaust the current
+        // drawPile.
+        // Current DrawPile has 3 cards.
+        // We need to play 3 more cards to pull those 3 from DrawPile into Hand/Next.
+
+        deck.playCard(0);
+        deck.playCard(0);
+        deck.playCard(0);
+
+        // After 4 plays total:
+        // The original DrawPile (3 cards) should be fully consumed and moved to
+        // hand/active.
+
+        assertEquals(firstPlayed, deck.getNextCard(),
+                "First played card should cycle back to become NextCard after 4 plays");
+
+        assertTrue(deck.repOk());
+    }
+
     private void setupFullDeck() {
         for (int i = 0; i < 8; i++) {
             deck.addCard(new Card("C" + i, 3, "TROOP", 2.0, 100, 1.0, 1.0, 1000, ""));
