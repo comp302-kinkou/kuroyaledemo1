@@ -36,7 +36,11 @@ public class GameController {
     private PlayerProfile playerProfile;
     private QuestData questData;
     private Map<String, CardProgression> cardProgressions;
-    private static final String SAVE_FILE = "savegame.dat";
+    private String saveFileName = "savegame.dat";
+
+    public void setSaveFileName(String fileName) {
+        this.saveFileName = fileName;
+    }
 
     public void saveGame() {
         GameData data = new GameData();
@@ -45,11 +49,11 @@ public class GameController {
         data.setCardProgressions(new ArrayList<>(cardProgressions.values()));
         data.setChallengeData(ChallengeManager.getInstance().exportData());
 
-        PersistenceManager.getInstance().save(data, SAVE_FILE);
+        PersistenceManager.getInstance().save(data, saveFileName);
     }
 
     public void loadGame() {
-        GameData data = PersistenceManager.getInstance().load(SAVE_FILE);
+        GameData data = PersistenceManager.getInstance().load(saveFileName);
         if (data != null) {
             this.playerProfile = data.getPlayerProfile();
             this.questData = data.getQuestData();
@@ -434,7 +438,7 @@ public class GameController {
         return null; // Card not found in library
     }
 
-    //Upgrades a card to the next level if the player has enough gold.
+    // Upgrades a card to the next level if the player has enough gold.
     public boolean upgradeCard(Card card) {
         if (card == null || playerProfile == null) {
             return false;
