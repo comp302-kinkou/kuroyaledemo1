@@ -52,6 +52,12 @@ public class ClashRoyaleFX extends Application {
         primaryStage.setScene(scene);
     }
 
+    public void showLobby() {
+        LobbyView view = new LobbyView(this);
+        Scene scene = new Scene(view.getView(), 600, 600);
+        primaryStage.setScene(scene);
+    }
+
     public static void main(String[] args) {
         launch(args);
     }

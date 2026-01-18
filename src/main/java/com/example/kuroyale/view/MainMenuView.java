@@ -55,12 +55,17 @@ public class MainMenuView {
         btnCardUpgrade.setOnAction(e -> mainApp.showCardUpgrade());
         btnCardUpgrade.setMaxWidth(200);
 
+        Button btnMultiplayer = new Button("Multiplayer");
+        btnMultiplayer.setOnAction(e -> mainApp.showLobby());
+        btnMultiplayer.setMaxWidth(200);
+        btnMultiplayer.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
+
         Button btnExit = new Button("Exit");
         btnExit.setOnAction(e -> System.exit(0));
         btnExit.setMaxWidth(200);
 
         root.getChildren().addAll(titleLabel, goldLabel, btnDeckBuilder, btnArenaDesigner, btnStartGame,
-                btnChallengeMode, btnCardUpgrade,
+                btnChallengeMode, btnCardUpgrade, btnMultiplayer,
                 btnExit);
         return root;
     }

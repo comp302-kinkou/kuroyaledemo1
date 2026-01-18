@@ -1,6 +1,8 @@
 package com.example.kuroyale.controller;
 
 import com.example.kuroyale.model.*;
+import com.example.kuroyale.network.NetworkManager;
+import com.example.kuroyale.protocol.Message;
 import com.example.kuroyale.model.challenge.Challenge;
 import com.example.kuroyale.model.challenge.ChallengeManager;
 import com.example.kuroyale.model.persistence.*;
@@ -23,6 +25,9 @@ public class GameController {
     private List<Effect> activeEffects;
     private boolean isGameRunning;
     private UnitController unitController;
+
+    private boolean isMultiplayer = false;
+    private NetworkManager networkManager;
 
     private double gameTime;
 
@@ -104,6 +109,7 @@ public class GameController {
 
         // Load Network Config at startup
         com.example.kuroyale.config.NetworkConfig.getInstance();
+        this.networkManager = NetworkManager.getInstance();
 
         // Try to load game strictly on startup? Or maybe call loadGame() explicitly.
         // For now, let's just initialize default empty structures.
@@ -185,7 +191,15 @@ public class GameController {
         activeEffects.clear();
         playerElixirManager = new ElixirManager(); // Reset player elixir
         computerElixirManager = new ElixirManager(); // Reset computer elixir
-        computerOpponent = new ComputerOpponent(this); // Reset opponent logic
+        playerElixirManager = new ElixirManager(); // Reset player elixir
+        computerElixirManager = new ElixirManager(); // Reset computer elixir
+
+        if (!isMultiplayer) {
+            computerOpponent = new ComputerOpponent(this); // Reset opponent logic
+        } else {
+            computerOpponent = null; // No AI in multiplayer
+        }
+
         timeScale = 1.0; // Reset speed
 
         // Only set default if no towers exist (i.e. not customized)
@@ -475,6 +489,13 @@ public class GameController {
      * Play a card at the specified position with player flag
      */
     public boolean playCard(Card card, double x, double y, boolean isPlayer) {
+        if (isMultiplayer && isPlayer) {
+            // Broadcast move
+            String payload = card.getName() + "," + x + "," + y;
+            networkManager.sendMessage(
+                    new Message(Message.MessageType.CARD_PLAYED, networkManager.getLocalPlayerId(), payload));
+        }
+
         ElixirManager rsc = isPlayer ? playerElixirManager : computerElixirManager;
 
         int cost = card.getElixirCost();
@@ -519,6 +540,53 @@ public class GameController {
         }
 
         return true;
+    }
+
+    public void startMultiplayerGame() {
+        this.isMultiplayer = true;
+        this.isPaused = false;
+
+        // Setup listener
+        networkManager.setMessageHandler(this::handleIncomingMessage);
+
+        startGame();
+    }
+
+    private void handleIncomingMessage(Message msg) {
+        javafx.application.Platform.runLater(() -> {
+            switch (msg.getType()) {
+                case CARD_PLAYED:
+                    // Data format: "CardName,x,y"
+                    String[] parts = ((String) msg.getData()).split(",");
+                    String cardName = parts[0];
+                    double x = Double.parseDouble(parts[1]);
+                    double y = Double.parseDouble(parts[2]);
+
+                    // Mirror coordinates for enemy view
+                    double mirroredX = arena.getWidth() - x;
+                    double mirroredY = arena.getHeight() - y;
+
+                    Card card = CardLibrary.getCardByName(cardName);
+                    if (card != null) {
+                        // Play as opponent (isPlayer = false)
+                        // Avoid re-sending message by checking isPlayer in playCard
+                        playCard(card, mirroredX, mirroredY, false);
+                    }
+                    break;
+                case DISCONNECT:
+                    System.out.println("Opponent disconnected!");
+                    // Handle win directly or show dialog
+                    endGame("WIN"); // Award win on disconnect
+                    break;
+                case GAME_OVER:
+                    // If opponent says game over? Usually local check is enough,
+                    // but if we want to sync result:
+                    // endGame((String) msg.getData());
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     public Deck getDeck() {
