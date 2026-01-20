@@ -68,6 +68,7 @@ public class GameController {
         data.setQuestData(questData);
         data.setCardProgressions(new ArrayList<>(cardProgressions.values()));
         data.setChallengeData(ChallengeManager.getInstance().exportData());
+        data.setAchievementData(QuestManager.getInstance().exportAchievementData());
 
         PersistenceManager.getInstance().save(data, saveFileName);
     }
@@ -84,6 +85,7 @@ public class GameController {
             }
 
             ChallengeManager.getInstance().importData(data.getChallengeData());
+            QuestManager.getInstance().importAchievementData(data.getAchievementData());
             System.out.println("Game loaded.");
         } else {
             System.out.println("No save file found. Using defaults.");

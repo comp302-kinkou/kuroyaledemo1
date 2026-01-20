@@ -64,6 +64,11 @@ public class MainMenuView {
         btnMultiplayer.setMaxWidth(200);
         btnMultiplayer.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
 
+        Button btnQuestsAchievements = new Button("Quests & Achievements");
+        btnQuestsAchievements.setOnAction(e -> mainApp.showQuestsAchievements());
+        btnQuestsAchievements.setMaxWidth(200);
+        btnQuestsAchievements.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white;");
+
         Button btnLocalPvP = new Button("Local PvP");
         btnLocalPvP.setOnAction(e -> {
             // Check if arena is designed first
@@ -85,7 +90,7 @@ public class MainMenuView {
         btnExit.setMaxWidth(200);
 
         root.getChildren().addAll(titleLabel, goldLabel, btnDeckBuilder, btnArenaDesigner, btnStartGame,
-                btnChallengeMode, btnCardUpgrade, btnMultiplayer, btnLocalPvP,
+                btnChallengeMode, btnCardUpgrade, btnMultiplayer, btnQuestsAchievements, btnLocalPvP,
                 btnExit);
         return root;
     }
