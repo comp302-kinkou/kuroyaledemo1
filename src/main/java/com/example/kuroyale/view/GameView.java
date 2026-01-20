@@ -729,6 +729,15 @@ public class GameView {
             overlay.getChildren().addAll(starsLabel, rewardLabel);
         }
 
+        // Combo Rewards
+        int comboCount = controller.getComboManager().getUniqueComboCount();
+        if (comboCount > 0) {
+            int comboReward = comboCount * 10;
+            Label comboLabel = new Label("Combos Triggered: " + comboCount + " (+" + comboReward + " gold)");
+            comboLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: gold;");
+            overlay.getChildren().add(comboLabel);
+        }
+
         Button exitButton = new Button("Return to Menu");
         exitButton.setStyle("-fx-font-size: 18px; -fx-background-color: #3498db; -fx-text-fill: white;");
         exitButton.setOnAction(e -> {

@@ -928,6 +928,15 @@ public class GameController {
         gameResult = result;
         gameTime = 0; // Stop timer
 
+        // Calculate and award combo rewards
+        int comboCount = comboManager.getUniqueComboCount();
+        int comboReward = comboCount * 10;
+        if (comboReward > 0 && playerProfile != null) {
+            playerProfile.addGold(comboReward);
+            System.out.println("Combo Reward: " + comboCount + " combos triggered = " + comboReward + " gold!");
+            saveGame(); // Save after adding gold
+        }
+
         // Track achievement progress
         QuestManager qm = QuestManager.getInstance();
         qm.onMatchPlayed();
