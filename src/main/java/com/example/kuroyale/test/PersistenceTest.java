@@ -19,9 +19,16 @@ public class PersistenceTest {
         GameData data = new GameData();
         data.getPlayerProfile().setName("TestPlayer");
         data.getPlayerProfile().setTotalGold(500);
-        data.getPlayerProfile().incrementStat("wins", 5);
+        data.getPlayerProfile().incrementWins();
+        data.getPlayerProfile().incrementWins();
+        data.getPlayerProfile().incrementWins();
+        data.getPlayerProfile().incrementWins();
+        data.getPlayerProfile().incrementWins();
 
-        CardProgression card = new CardProgression("Knight", CardRarity.COMMON, 2);
+        CardProgression card = new CardProgression("Knight", CardRarity.COMMON);
+        // Manually level up to matches previous test setup (Level 2)
+        card.upgrade();
+
         card.addGoldSpent(100);
         List<CardProgression> cards = new ArrayList<>();
         cards.add(card);
@@ -53,8 +60,8 @@ public class PersistenceTest {
                 System.err.println("Gold mismatch: " + loadedData.getPlayerProfile().getTotalGold());
                 passed = false;
             }
-            if (5 != loadedData.getPlayerProfile().getStat("wins")) {
-                System.err.println("Stats mismatch: " + loadedData.getPlayerProfile().getStat("wins"));
+            if (5 != loadedData.getPlayerProfile().getTotalWins()) {
+                System.err.println("Stats mismatch: " + loadedData.getPlayerProfile().getTotalWins());
                 passed = false;
             }
             if (loadedData.getCardProgressions().size() != 1) {

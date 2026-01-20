@@ -44,7 +44,16 @@ public class ChallengeSelectionView {
         headerBox.setPadding(new Insets(20));
         headerBox.setStyle(
                 "-fx-background-color: #34495e; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 0);");
-        root.setTop(headerBox);
+
+        // Star Criteria Legend
+        Label criteriaLabel = new Label("⭐ Win  |  ⭐⭐ Win < 2 min  |  ⭐⭐⭐ Perfect Win or Win < 90s");
+        criteriaLabel.setStyle("-fx-text-fill: #bdc3c7; -fx-font-size: 14px; -fx-padding: 5 0 0 0;");
+
+        VBox topContainer = new VBox(10, headerBox, criteriaLabel);
+        topContainer.setAlignment(Pos.CENTER);
+        topContainer.setStyle("-fx-background-color: #2c3e50;");
+
+        root.setTop(topContainer);
 
         // Content
         refreshChallenges();
@@ -136,7 +145,16 @@ public class ChallengeSelectionView {
                     "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;");
             startButton.setMinWidth(100);
             startButton.setOnAction(e -> startChallenge(challenge));
-            actionBox.getChildren().add(startButton);
+
+            Button testButton = new Button("Test");
+            testButton.setStyle(
+                    "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;");
+            testButton.setMinWidth(100);
+            testButton.setOnAction(e -> startChallengeTest(challenge));
+
+            VBox buttonsBox = new VBox(10, startButton, testButton);
+            buttonsBox.setAlignment(Pos.CENTER_RIGHT);
+            actionBox.getChildren().add(buttonsBox);
         }
 
         card.getChildren().addAll(statusBox, infoBox, actionBox);
@@ -159,7 +177,27 @@ public class ChallengeSelectionView {
         }
 
         // Start Game
-        controller.startChallenge(challenge);
+        controller.startChallenge(challenge, false);
+        mainApp.showGameView();
+    }
+
+    private void startChallengeTest(Challenge challenge) {
+        GameController controller = GameController.getInstance();
+
+        if (!controller.isGameReady()) {
+            showAlert("Not Ready", "Please build a deck and design the arena before starting a challenge!");
+            return;
+        }
+
+        // Validate Deck
+        String error = challenge.validateDeck(controller.getDeck());
+        if (error != null) {
+            showAlert("Invalid Deck", "Your deck does not meet the challenge requirements:\n\n" + error);
+            return;
+        }
+
+        // Start Game in Test Mode
+        controller.startChallenge(challenge, true);
         mainApp.showGameView();
     }
 

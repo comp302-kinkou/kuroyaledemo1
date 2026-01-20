@@ -19,14 +19,14 @@ public class Tower {
         this.lastAttackTime = 0;
 
         if (type.equals("KING")) {
-            this.maxHealth = 4000;
+            this.maxHealth = 2400; // User requested: 2400
             this.range = 7.0;
-            this.damage = 100;
+            this.damage = 25; // User requested: 50 - 25 = 25
             this.hitSpeed = 1.0;
         } else { // PRINCESS
-            this.maxHealth = 2500;
+            this.maxHealth = 1500; // User requested: 1500
             this.range = 7.5;
-            this.damage = 80;
+            this.damage = 10; // User requested: 30 - 20 = 10
             this.hitSpeed = 0.8;
         }
         this.health = this.maxHealth;
@@ -60,6 +60,10 @@ public class Tower {
 
     public boolean isDestroyed() {
         return health <= 0;
+    }
+
+    public void reset() {
+        this.health = this.maxHealth;
     }
 
     public boolean canAttack(long currentTime) {

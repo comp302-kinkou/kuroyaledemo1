@@ -48,6 +48,28 @@ public class ArenaDesignView {
 
         this.canvasWidth = arena.getWidth() * scale;
         this.canvasHeight = arena.getHeight() * scale;
+
+        loadCurrentDesign();
+    }
+
+    private void loadCurrentDesign() {
+        tempTowers.clear();
+        tempBridges.clear();
+
+        // Load existing towers from arena
+        for (Tower t : arena.getTowers()) {
+            if (t.isPlayer()) {
+                // Determine type based on HP (simple heuristic since getType might not be
+                // exposed or reliable if reloaded)
+                // Actually Tower has getType() now
+                tempTowers.add(new Tower(t.getType(), t.getX(), t.getY(), true));
+            }
+        }
+
+        // Load existing bridges from arena
+        for (Arena.Bridge b : arena.getBridges()) {
+            tempBridges.add(new Arena.Bridge(b.name, b.x, b.width));
+        }
     }
 
     public Parent getView() {
@@ -117,7 +139,8 @@ public class ArenaDesignView {
         root.setBottom(bottomBox);
 
         // Initial render
-        clearDesign(); // Reset temp lists
+        // Don't clear! We loaded in constructor.
+        // clearDesign();
         render();
 
         return root;
@@ -210,7 +233,7 @@ public class ArenaDesignView {
 
         // Draw Towers
         for (Tower t : tempTowers) {
-            if (t.getHealth() >= 4000)
+            if ("KING".equals(t.getType()))
                 gc.setFill(Color.GOLD); // King
             else
                 gc.setFill(Color.MAGENTA); // Princess
@@ -234,8 +257,8 @@ public class ArenaDesignView {
 
     private void saveAndExit() {
         // Validate
-        long kingCount = tempTowers.stream().filter(t -> t.getHealth() >= 4000).count();
-        long princessCount = tempTowers.stream().filter(t -> t.getHealth() < 4000).count();
+        long kingCount = tempTowers.stream().filter(t -> "KING".equals(t.getType())).count();
+        long princessCount = tempTowers.stream().filter(t -> "PRINCESS".equals(t.getType())).count();
 
         if (kingCount != 1 || princessCount != 2) {
             showAlert("Incomplete Design", "You must place 1 King Tower and 2 Princess Towers.");
@@ -259,8 +282,8 @@ public class ArenaDesignView {
         // Add Enemy Towers (Mirrored)
         for (Tower t : tempTowers) {
             double mirrorY = arena.getHeight() - t.getY();
-            // Assuming Type based on HP again
-            String type = (t.getHealth() >= 4000) ? "KING" : "PRINCESS";
+            // Use explicit type
+            String type = t.getType();
             arena.addTower(new Tower(type, t.getX(), mirrorY, false));
         }
 

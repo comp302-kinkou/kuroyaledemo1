@@ -34,7 +34,7 @@ public class ComputerOpponent {
     }
 
     public void update(double deltaTime) {
-        if (!gameController.isGameRunning() || gameController.isPaused()) {
+        if (!gameController.isGameRunning() || gameController.isPaused() || gameController.isTestingMode()) {
             return;
         }
 

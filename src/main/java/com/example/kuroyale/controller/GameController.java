@@ -16,6 +16,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GameController {
 
+    private Challenge activeChallenge;
+
     private static GameController instance;
 
     private Deck deck; // Player's deck
@@ -44,6 +46,7 @@ public class GameController {
 
     private boolean isDeckSaved = false;
     private boolean isArenaSaved = false;
+    private boolean isTestingMode = false;
 
     private boolean isPaused;
     private String gameResult; // "WIN", "LOSS", "DRAW", or null if game is ongoing
@@ -51,7 +54,7 @@ public class GameController {
     // Combo System
     private ComboManager comboManager;
     private List<ComboVisualEffect> activeComboVisuals;
-    
+
     // Tower destruction tracking for achievements
     private java.util.Set<Integer> destroyedTowerIds = new java.util.HashSet<>();
 
@@ -147,6 +150,21 @@ public class GameController {
         initializeCards(); // Populate the deck with available cards
     }
 
+    public void startChallenge(Challenge challenge) {
+        startChallenge(challenge, false);
+    }
+
+    public void startChallenge(Challenge challenge, boolean isTestingMode) {
+        this.activeChallenge = challenge;
+        this.isTestingMode = isTestingMode;
+        startGame();
+        System.out.println("Started Challenge: " + challenge.getName() + (isTestingMode ? " (TEST MODE)" : ""));
+    }
+
+    public boolean isTestingMode() {
+        return isTestingMode;
+    }
+
     public static GameController getInstance() {
         if (instance == null) {
             instance = new GameController();
@@ -168,6 +186,7 @@ public class GameController {
         deck.clear();
 
         // Explicitly trying to find Spear Goblins to include
+        // Also ensure Giant and Knight are included for combo testing if possible
         Card spearGoblins = CardLibrary.getCardByName("Spear Goblins");
         if (spearGoblins != null) {
             deck.addCard(spearGoblins);
@@ -274,6 +293,10 @@ public class GameController {
         isGameRunning = false;
         gameResult = null;
 
+        // Clear challenge state
+        activeChallenge = null;
+        isTestingMode = false;
+
         System.out.println("Game mode reset to normal.");
     }
 
@@ -281,6 +304,14 @@ public class GameController {
         isGameRunning = true;
         isPaused = false;
         gameResult = null;
+        // Don't reset isTestingMode here as it might have been set by startChallenge
+        // ensuring it defaults to false for normal games if not set explicitly via
+        // startChallenge
+        if (activeChallenge == null) {
+            isTestingMode = false;
+        }
+
+        activeUnits.clear(); // Fix: Clear units from previous games
         activeBuildings.clear();
         activeEffects.clear();
         playerElixirManager = new ElixirManager(); // Reset player elixir
@@ -303,6 +334,9 @@ public class GameController {
         // Only set default if no towers exist (i.e. not customized)
         if (arena.getTowers().isEmpty()) {
             arena.setupDefaultTowers();
+        } else {
+            // Fix for Auto-Win bug: Reset existing towers (health) if reusing arena
+            arena.reset();
         }
 
         deck.initializeGameDeck();
@@ -364,6 +398,14 @@ public class GameController {
         gameTime -= scaledDeltaTime;
 
         // 1. Update Elixir
+        if (isTestingMode) {
+            playerElixirManager.setRegenerationRate(10.0); // Super fast for testing
+        } else {
+            // Standard (0-2m): 1 per 2.8s (~0.357)
+            // Double (2-3m): 1 per 1.4s (~0.714)
+            double rate = (gameTime < 120) ? (1.0 / 2.8) : (1.0 / 1.4);
+            playerElixirManager.setRegenerationRate(rate);
+        }
         playerElixirManager.update(scaledDeltaTime);
         if (isLocalPvP) {
             player2ElixirManager.update(scaledDeltaTime);
@@ -533,10 +575,6 @@ public class GameController {
         return nearest;
     }
 
-    private void applySpellDamage(Card card, double x, double y) {
-        applySpellDamage(card, x, y, null);
-    }
-
     private void applySpellDamage(Card card, double x, double y, CardProgression progression) {
         double radius = card.getRange();
         double radiusSq = radius * radius;
@@ -572,8 +610,10 @@ public class GameController {
                 double dy = tower.getY() - y;
                 // Tower hitbox is larger, but simple center check for now
                 if (dx * dx + dy * dy <= radiusSq) {
-                    tower.takeDamage(damage);
-                    totalDamageDealt += (int) damage;
+                    // Spells deal reduced damage to towers (40%)
+                    double towerDamage = damage * 0.4;
+                    tower.takeDamage(towerDamage);
+                    totalDamageDealt += (int) towerDamage;
                 }
             }
         }
@@ -700,27 +740,24 @@ public class GameController {
         // Handle combo effects
         for (DetectedCombo detectedCombo : detectedCombos) {
             ComboEffect effect = detectedCombo.getEffect();
-            
             // Create visual effect for the combo
             ComboVisualEffect visual = new ComboVisualEffect(
-                x, y, 
-                detectedCombo.getComboType().getDisplayName(),
-                detectedCombo.getComboType(),
-                currentTime
-            );
+                    x, y,
+                    detectedCombo.getComboType().getDisplayName(),
+                    detectedCombo.getComboType(),
+                    currentTime);
             activeComboVisuals.add(visual);
-            
             // Special case: Elixir refund for Spell Synergy
             if (effect.getEffectType() == ComboEffectType.ELIXIR_REFUND) {
                 int refundAmount = (int) effect.getValue();
                 rsc.addElixir(refundAmount);
-                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
-                                  " - Refunded " + refundAmount + " Elixir!");
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() +
+                        " - Refunded " + refundAmount + " Elixir!");
             } else {
                 // Apply effects to units/buildings
                 ComboEffectApplier.applyComboEffect(detectedCombo, activeUnits, activeBuildings, isPlayer);
-                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
-                                  " - Effect applied!");
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() +
+                        " - Effect applied!");
             }
         }
 
@@ -940,8 +977,6 @@ public class GameController {
         }
     }
 
-    private Challenge activeChallenge;
-
     /**
      * Ends the game and sets the result
      */
@@ -965,9 +1000,27 @@ public class GameController {
 
         if ("WIN".equals(result)) {
             qm.onMatchWon(isMultiplayer);
+            if (playerProfile != null) {
+                playerProfile.incrementWins();
+                playerProfile.addGold(150); // Victory Gold
+            }
         } else if ("LOSS".equals(result)) {
             qm.onMatchLost();
+            if (playerProfile != null) {
+                playerProfile.incrementLosses();
+                playerProfile.addGold(50); // Defeat Gold
+            }
+        } else {
+            if (playerProfile != null) {
+                playerProfile.addGold(75); // Draw Gold
+            }
         }
+
+        if (playerProfile != null) {
+            playerProfile.incrementMatchesPlayed();
+        }
+
+        saveGame(); // Save progress at end of match
 
         // Handle Challenge Completion
         if (activeChallenge != null && "WIN".equals(result)) {
@@ -978,12 +1031,6 @@ public class GameController {
                         "Challenge Complete! Stars: " + stars + " Reward: " + activeChallenge.getReward() + " Gold");
             }
         }
-    }
-
-    public void startChallenge(Challenge challenge) {
-        this.activeChallenge = challenge;
-        challenge.onGameStart(this);
-        startGame();
     }
 
     public Challenge getActiveChallenge() {

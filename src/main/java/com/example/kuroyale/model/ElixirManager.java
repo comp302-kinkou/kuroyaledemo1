@@ -45,4 +45,8 @@ public class ElixirManager {
     public double getExactElixir() {
         return currentElixir;
     }
+
+    public void setRegenerationRate(double rate) {
+        this.regenerationRate = rate;
+    }
 }

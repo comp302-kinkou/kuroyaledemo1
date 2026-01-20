@@ -127,11 +127,36 @@ public class DeckBuilderView {
     }
 
     private void loadData() {
-        // Start with empty deck
+        // Load existing deck from controller ONLY if it has been explicitly
+        // saved/created by user
         currentDeckCards.clear();
 
+        // Use isDeckReady() to check if the user has saved a valid deck.
+        // If false, we start empty so they can build one.
+        if (controller.isDeckReady()) {
+            Deck existingDeck = controller.getDeck();
+            if (existingDeck != null && existingDeck.getCards() != null) {
+                currentDeckCards.addAll(existingDeck.getCards());
+            }
+        }
+
         // Load all available cards
-        availableCards.setAll(CardLibrary.getAllCards());
+        // Filter out cards already in deck? Or keep them all available but maybe mark
+        // as selected?
+        // Current logic removes selected from available, so let's do that to match
+        availableCards.clear();
+        for (Card card : CardLibrary.getAllCards()) {
+            boolean alreadyInDeck = false;
+            for (Card deckCard : currentDeckCards) {
+                if (deckCard.getName().equals(card.getName())) {
+                    alreadyInDeck = true;
+                    break;
+                }
+            }
+            if (!alreadyInDeck) {
+                availableCards.add(card);
+            }
+        }
 
         updateCardCount();
     }

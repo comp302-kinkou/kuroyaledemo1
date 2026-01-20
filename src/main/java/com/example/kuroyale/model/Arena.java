@@ -58,6 +58,12 @@ public class Arena {
         towers.clear();
     }
 
+    public void reset() {
+        for (Tower tower : towers) {
+            tower.reset();
+        }
+    }
+
     public void clearBridges() {
         bridges.clear();
     }

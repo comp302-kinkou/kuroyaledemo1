@@ -1,35 +1,21 @@
 package com.example.kuroyale.model.persistence;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 public class PlayerProfile implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String name;
-    private int totalGold;
-    private Map<String, Integer> lifetimeStats;
+    private String name = "Player";
+    private int gold = 1000;
+
+    // Lifetime Statistics
+    private int totalMatchesPlayed;
+    private int totalWins;
+    private int totalLosses;
+    private int totalTowersDestroyed;
+    private int totalDamageDealt;
 
     public PlayerProfile() {
-        this.name = "Player";
-        this.totalGold = 0;
-        this.lifetimeStats = new HashMap<>();
-        initializeStats();
-    }
-
-    public PlayerProfile(String name) {
-        this.name = name;
-        this.totalGold = 0;
-        this.lifetimeStats = new HashMap<>();
-        initializeStats();
-    }
-
-    private void initializeStats() {
-        lifetimeStats.put("matchesPlayed", 0);
-        lifetimeStats.put("wins", 0);
-        lifetimeStats.put("losses", 0);
-        lifetimeStats.put("towersDestroyed", 0);
     }
 
     public String getName() {
@@ -41,34 +27,64 @@ public class PlayerProfile implements Serializable {
     }
 
     public int getTotalGold() {
-        return totalGold;
+        return gold;
     }
 
-    public void setTotalGold(int totalGold) {
-        this.totalGold = totalGold;
+    public void setTotalGold(int gold) {
+        this.gold = gold;
     }
 
     public void addGold(int amount) {
-        this.totalGold += amount;
+        this.gold += amount;
     }
 
     public boolean spendGold(int amount) {
-        if (totalGold >= amount) {
-            totalGold -= amount;
+        if (this.gold >= amount) {
+            this.gold -= amount;
             return true;
         }
         return false;
     }
 
-    public int getStat(String key) {
-        return lifetimeStats.getOrDefault(key, 0);
+    // Statistics Methods
+    public void incrementMatchesPlayed() {
+        this.totalMatchesPlayed++;
     }
 
-    public void incrementStat(String key, int amount) {
-        lifetimeStats.put(key, getStat(key) + amount);
+    public void incrementWins() {
+        this.totalWins++;
     }
 
-    public Map<String, Integer> getLifetimeStats() {
-        return lifetimeStats;
+    public void incrementLosses() {
+        this.totalLosses++;
+    }
+
+    public void addTowersDestroyed(int count) {
+        this.totalTowersDestroyed += count;
+    }
+
+    public void addDamageDealt(int amount) {
+        this.totalDamageDealt += amount;
+    }
+
+    // Getters for statistics
+    public int getTotalMatchesPlayed() {
+        return totalMatchesPlayed;
+    }
+
+    public int getTotalWins() {
+        return totalWins;
+    }
+
+    public int getTotalLosses() {
+        return totalLosses;
+    }
+
+    public int getTotalTowersDestroyed() {
+        return totalTowersDestroyed;
+    }
+
+    public int getTotalDamageDealt() {
+        return totalDamageDealt;
     }
 }

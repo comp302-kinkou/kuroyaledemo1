@@ -11,9 +11,12 @@ public class BuildingFactory {
         return createBuilding(card, x, y, isPlayer, null);
     }
 
-    // Creates a building from a card, applying level-based stat bonuses if progression is provided.
-    // New constructor with progression: either null or a certain progression object depending on the call
-    public static Building createBuilding(Card card, double x, double y, boolean isPlayer, CardProgression progression) {
+    // Creates a building from a card, applying level-based stat bonuses if
+    // progression is provided.
+    // New constructor with progression: either null or a certain progression object
+    // depending on the call
+    public static Building createBuilding(Card card, double x, double y, boolean isPlayer,
+            CardProgression progression) {
         String name = card.getName();
         String type = determineBuildingType(name);
 

@@ -742,6 +742,7 @@ public class GameView {
         exitButton.setStyle("-fx-font-size: 18px; -fx-background-color: #3498db; -fx-text-fill: white;");
         exitButton.setOnAction(e -> {
             stopGame();
+            controller.resetGameMode(); // Fix: Ensure challenge state is cleared
             mainApp.showMainMenu();
         });
 

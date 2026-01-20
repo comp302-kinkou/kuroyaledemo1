@@ -11,8 +11,10 @@ public class UnitFactory {
         return createUnit(card, x, y, isPlayer, null);
     }
 
-    // Creates a unit from a card, applying level-based stat bonuses if progression is provided
-    // New constructor with progression: either null or a certain progression object depending on the call
+    // Creates a unit from a card, applying level-based stat bonuses if progression
+    // is provided
+    // New constructor with progression: either null or a certain progression object
+    // depending on the call
     public static Unit createUnit(Card card, double x, double y, boolean isPlayer, CardProgression progression) {
         double health = card.getHealth();
         double damage = card.getDamage();
