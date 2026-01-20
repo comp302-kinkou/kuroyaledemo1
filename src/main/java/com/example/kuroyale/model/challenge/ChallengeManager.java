@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.example.kuroyale.model.persistence.ChallengeData;
+import com.example.kuroyale.model.quest.QuestManager;
 
 public class ChallengeManager {
     private static ChallengeManager instance;
@@ -74,6 +75,8 @@ public class ChallengeManager {
             for (Challenge c : challenges) {
                 if (c.getName().equals(challengeName)) {
                     totalGold += c.getReward();
+                    // Track gold earned for achievements
+                    QuestManager.getInstance().onGoldEarned(c.getReward());
                     break;
                 }
             }
@@ -86,6 +89,9 @@ public class ChallengeManager {
         if (stars > currentStars) {
             starsEarned.put(challengeName, stars);
         }
+
+        // Track challenge completion for achievements
+        QuestManager.getInstance().onChallengeCompleted(stars);
 
         // Unlock next challenge
         for (int i = 0; i < challenges.size() - 1; i++) {

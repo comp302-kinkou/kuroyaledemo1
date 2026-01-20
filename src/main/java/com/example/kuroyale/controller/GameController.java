@@ -6,6 +6,7 @@ import com.example.kuroyale.protocol.Message;
 import com.example.kuroyale.model.challenge.Challenge;
 import com.example.kuroyale.model.challenge.ChallengeManager;
 import com.example.kuroyale.model.persistence.*;
+import com.example.kuroyale.model.quest.QuestManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -390,6 +391,8 @@ public class GameController {
             damage = Math.round(damage);
         }
 
+        int totalDamageDealt = 0;
+
         // Damage Units
         for (Unit unit : activeUnits) {
             // Check if enemy? Spells usually hit everything or just enemies?
@@ -400,6 +403,7 @@ public class GameController {
                 double dy = unit.getY() - y;
                 if (dx * dx + dy * dy <= radiusSq) {
                     unit.takeDamage(damage);
+                    totalDamageDealt += (int) damage;
                 }
             }
         }
@@ -412,6 +416,7 @@ public class GameController {
                 // Tower hitbox is larger, but simple center check for now
                 if (dx * dx + dy * dy <= radiusSq) {
                     tower.takeDamage(damage);
+                    totalDamageDealt += (int) damage;
                 }
             }
         }
@@ -423,8 +428,14 @@ public class GameController {
                 double dy = building.getY() - y;
                 if (dx * dx + dy * dy <= radiusSq) {
                     building.takeDamage(damage);
+                    totalDamageDealt += (int) damage;
                 }
             }
+        }
+
+        // Track spell damage for achievements
+        if (totalDamageDealt > 0) {
+            QuestManager.getInstance().onSpellDamageDealt(totalDamageDealt);
         }
 
         // Add visual effect
@@ -465,8 +476,15 @@ public class GameController {
 
         int cost = progression.getUpgradeCost();
         if (playerProfile.spendGold(cost)) {
+            int previousLevel = progression.getLevel();
             progression.upgrade();
             progression.addGoldSpent(cost);
+            
+            // Track legendary card level 3 upgrade for achievements
+            if (progression.getRarity() == CardRarity.LEGENDARY && progression.getLevel() == 3 && previousLevel == 2) {
+                QuestManager.getInstance().onLegendaryCardUpgradedToLevel3();
+            }
+            
             saveGame(); // Auto-save after upgrade
             return true;
         }
@@ -514,6 +532,12 @@ public class GameController {
             case "TROOP":
                 Unit newUnit = UnitFactory.createUnit(card, x, y, isPlayer, progression);
                 activeUnits.add(newUnit);
+                // Track troop deployment for achievements (count based on card, e.g. Skeleton Army = many)
+                if (isPlayer) {
+                    int troopCount = card.getName().contains("Army") ? 15 : 
+                                     card.getName().contains("Horde") ? 6 : 1;
+                    QuestManager.getInstance().onTroopsDeployed(troopCount);
+                }
                 System.out
                         .println((isPlayer ? "Player" : "Computer") + " spawned Troop: " + card.getName() + " (Level " +
                                 (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
@@ -654,10 +678,12 @@ public class GameController {
         // If any king tower is destroyed, end game immediately
         if (playerKingDestroyed && enemyKingDestroyed) {
             // Both kings destroyed simultaneously (rare case)
+            QuestManager.getInstance().onKingTowerDestroyed();
             endGame("DRAW");
             System.out.println("Game Over! DRAW - Both kings destroyed!");
         } else if (enemyKingDestroyed) {
             // Enemy king destroyed - player wins
+            QuestManager.getInstance().onKingTowerDestroyed();
             endGame("WIN");
             System.out.println("Game Over! VICTORY - Enemy king tower destroyed!");
         } else if (playerKingDestroyed) {
@@ -711,6 +737,16 @@ public class GameController {
         isGameRunning = false;
         gameResult = result;
         gameTime = 0; // Stop timer
+
+        // Track achievement progress
+        QuestManager qm = QuestManager.getInstance();
+        qm.onMatchPlayed();
+        
+        if ("WIN".equals(result)) {
+            qm.onMatchWon(isMultiplayer);
+        } else if ("LOSS".equals(result)) {
+            qm.onMatchLost();
+        }
 
         // Handle Challenge Completion
         if (activeChallenge != null && "WIN".equals(result)) {
