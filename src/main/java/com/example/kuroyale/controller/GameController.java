@@ -832,6 +832,7 @@ public class GameController {
     private java.util.List<Tower> opponentTowers = new java.util.ArrayList<>();
     private boolean isLocalReady = false;
     private boolean isRemoteReady = false;
+    private boolean isPeerConnected = false;
 
     public void setMultiplayerSeed(long seed) {
         this.multiplayerSeed = seed;
@@ -845,7 +846,16 @@ public class GameController {
     public void resetMultiplayerStates() {
         isLocalReady = false;
         isRemoteReady = false;
+        isPeerConnected = false;
         opponentTowers.clear();
+    }
+
+    public boolean isPeerConnected() {
+        return isPeerConnected;
+    }
+
+    public void setPeerConnected(boolean connected) {
+        this.isPeerConnected = connected;
     }
 
     public boolean isLocalReady() {

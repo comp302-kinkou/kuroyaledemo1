@@ -153,8 +153,18 @@ public class LobbyView {
         root.getChildren().addAll(titleLabel, prepBox, connectionPanel, statusLabel, controlBox, backButton);
 
         // Initial State check
-        if (networkManager.isConnected() || networkManager.isHost()) {
-            // But don't enable Ready until Join Accepted/Requested (Peer check)
+        if (networkManager.isConnected()) {
+            // Restore peer state for Host/Client persistence
+            if (networkManager.isHost()) {
+                // If Host, we don't know if guest is still here unless we track it
+                if (controller.isPeerConnected()) {
+                    readyButton.setDisable(false);
+                }
+            } else {
+                // If Client, we are connected to Host
+                readyButton.setDisable(false);
+            }
+
             if (controller.isLocalReady()) {
                 applyLocalReadyUI();
             }
@@ -247,6 +257,7 @@ public class LobbyView {
         switch (msg.getType()) {
             case JOIN_REQUEST:
                 statusLabel.setText("Client Connected!");
+                controller.setPeerConnected(true);
                 readyButton.setDisable(false);
                 if (networkManager.isHost()) {
                     networkManager.sendMessage(new Message(Message.MessageType.JOIN_ACCEPT, 1, "Player 1"));
@@ -257,6 +268,7 @@ public class LobbyView {
                 break;
             case JOIN_ACCEPT:
                 statusLabel.setText("Joined! Waiting for seed...");
+                controller.setPeerConnected(true);
                 readyButton.setDisable(false);
                 break;
             case BRIDGE_SEED:
