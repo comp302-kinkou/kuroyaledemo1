@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.example.kuroyale.model.quest.Quest;
+import java.time.LocalDateTime;
 
 public class QuestData implements Serializable {
     private static final long serialVersionUID = 2L; // Updated version for new field
@@ -26,10 +27,15 @@ public class QuestData implements Serializable {
         this.achievements = new HashMap<>();
         this.achievementProgress = new HashMap<>();
         this.quests = new ArrayList<>();
+    // Placeholder for Quest logic
+    private LocalDateTime lastResetTime;
+
+    public QuestData() {
+        this.lastResetTime = LocalDateTime.now();
     }
 
-    public List<String> getDailyQuests() {
-        return dailyQuests;
+    public LocalDateTime getLastResetTime() {
+        return lastResetTime;
     }
 
     public void setDailyQuests(List<String> dailyQuests) {
@@ -74,5 +80,7 @@ public class QuestData implements Serializable {
 
     public void updateAchievementProgress(String achievementId, int progress) {
         achievementProgress.put(achievementId, progress);
+    public void setLastResetTime(LocalDateTime time) {
+        this.lastResetTime = time;
     }
 }

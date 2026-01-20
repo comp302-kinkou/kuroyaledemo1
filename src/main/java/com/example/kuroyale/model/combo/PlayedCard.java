@@ -28,7 +28,8 @@ public class PlayedCard {
         return isPlayer;
     }
 
-    // Checks if this card was played within the specified time window (in milliseconds) from the given reference timestamp.
+    // Checks if this card was played within the specified time window (in
+    // milliseconds) from the given reference timestamp.
     public boolean isWithinTimeWindow(long referenceTimestamp, long windowMs) {
         long timeDiff = Math.abs(referenceTimestamp - this.timestamp);
         return timeDiff <= windowMs;

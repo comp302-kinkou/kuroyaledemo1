@@ -5,13 +5,14 @@ import com.example.kuroyale.model.quest.AchievementData;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class GameData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private PlayerProfile playerProfile;
-    private List<CardProgression> cardProgressions;
     private QuestData questData;
+    private List<CardProgression> cardProgressions;
     private ChallengeData challengeData;
     private AchievementData achievementData;
 
@@ -31,20 +32,20 @@ public class GameData implements Serializable {
         this.playerProfile = playerProfile;
     }
 
-    public List<CardProgression> getCardProgressions() {
-        return cardProgressions;
-    }
-
-    public void setCardProgressions(List<CardProgression> cardProgressions) {
-        this.cardProgressions = cardProgressions;
-    }
-
     public QuestData getQuestData() {
         return questData;
     }
 
     public void setQuestData(QuestData questData) {
         this.questData = questData;
+    }
+
+    public List<CardProgression> getCardProgressions() {
+        return cardProgressions;
+    }
+
+    public void setCardProgressions(List<CardProgression> cardProgressions) {
+        this.cardProgressions = cardProgressions;
     }
 
     public ChallengeData getChallengeData() {

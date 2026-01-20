@@ -4,6 +4,7 @@ import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.controller.GameLoop;
 import com.example.kuroyale.model.*;
 import com.example.kuroyale.model.challenge.Challenge;
+import com.example.kuroyale.model.CardProgression;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -110,7 +111,7 @@ public class GameView {
         messageLabel = new Label("Select a card and click on arena to spawn!");
         timerLabel = new Label("Time: 3:00");
         timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
-        
+
         comboCounterLabel = new Label("Combos: 0");
         comboCounterLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: gold;");
 
@@ -623,28 +624,28 @@ public class GameView {
             double y = visual.getY() * TILE_SIZE;
             double scale = visual.getScale(currentTime);
             double alpha = visual.getAlpha(currentTime);
-            
+
             // Draw "COMBO!" text with animation
             gc.save();
             gc.setGlobalAlpha(alpha);
             gc.setFill(Color.GOLD);
             gc.setStroke(Color.ORANGE);
             gc.setLineWidth(2);
-            
+
             // Scale the text
             double fontSize = 20 * scale;
             gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize));
-            
+
             // Draw "COMBO!" text
             String comboText = "COMBO!";
             gc.fillText(comboText, x, y - 20);
             gc.strokeText(comboText, x, y - 20);
-            
+
             // Draw combo name below
             gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.NORMAL, fontSize * 0.7));
             gc.setFill(Color.WHITE);
             gc.fillText(visual.getComboName(), x, y + 5);
-            
+
             gc.restore();
         }
     }
@@ -742,6 +743,7 @@ public class GameView {
         exitButton.setStyle("-fx-font-size: 18px; -fx-background-color: #3498db; -fx-text-fill: white;");
         exitButton.setOnAction(e -> {
             stopGame();
+            controller.resetGameMode(); // Fix: Ensure challenge state is cleared
             mainApp.showMainMenu();
         });
 

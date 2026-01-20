@@ -38,4 +38,11 @@ public interface Challenge {
     default int getModifiedCost(Card card) {
         return card.getElixirCost();
     }
+
+    /**
+     * Whether this challenge provides its own fixed deck
+     */
+    default boolean isDeckProvided() {
+        return false;
+    }
 }

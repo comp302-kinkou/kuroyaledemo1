@@ -48,13 +48,18 @@ public class BudgetBattleChallenge implements Challenge {
         }
 
         double timeRemaining = controller.getGameTime();
+        // 2 Stars: Win in 2 mins or less (< 120s used) -> timeRemaining > 60s
         boolean fastWin = timeRemaining > 60;
+
+        // 3 Stars: Perfect Win OR Very Fast Win (90s or less used -> timeRemaining >
+        // 90s)
+        boolean veryFastWin = timeRemaining > 90;
 
         boolean perfectWin = controller.getArena().getTowers().stream()
                 .filter(t -> t.isPlayer())
                 .allMatch(t -> t.getHealth() == t.getMaxHealth());
 
-        if (perfectWin)
+        if (perfectWin || veryFastWin)
             return 3;
         if (fastWin)
             return 2;

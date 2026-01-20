@@ -9,6 +9,7 @@ public class Message implements Serializable {
         JOIN_REQUEST,
         JOIN_ACCEPT,
         JOIN_REJECT,
+        BRIDGE_SEED,
         PLAYER_READY,
         START_MATCH,
         CARD_PLAYED,
@@ -16,6 +17,7 @@ public class Message implements Serializable {
         ELIXIR_UPDATE,
         GAME_OVER,
         DISCONNECT,
+        TOWER_LAYOUT,
         PING // For connection quality
     }
 

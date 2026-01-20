@@ -126,4 +126,8 @@ public class CardProgression implements Serializable {
     public double applyLevelBonus(double baseValue) {
         return baseValue * getStatMultiplier();
     }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
 }

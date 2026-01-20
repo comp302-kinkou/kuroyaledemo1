@@ -16,9 +16,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GameController {
 
+    private Challenge activeChallenge;
+
     private static GameController instance;
 
     private Deck deck; // Player's deck
+    private Deck savedPlayerDeck; // For temporary deck swapping during challenges
     private Arena arena;
     private ElixirManager playerElixirManager;
     private ElixirManager computerElixirManager;
@@ -44,6 +47,7 @@ public class GameController {
 
     private boolean isDeckSaved = false;
     private boolean isArenaSaved = false;
+    private boolean isTestingMode = false;
 
     private boolean isPaused;
     private String gameResult; // "WIN", "LOSS", "DRAW", or null if game is ongoing
@@ -51,7 +55,7 @@ public class GameController {
     // Combo System
     private ComboManager comboManager;
     private List<ComboVisualEffect> activeComboVisuals;
-    
+
     // Tower destruction tracking for achievements
     private java.util.Set<Integer> destroyedTowerIds = new java.util.HashSet<>();
 
@@ -161,6 +165,21 @@ public class GameController {
         initializeCards(); // Populate the deck with available cards
     }
 
+    public void startChallenge(Challenge challenge) {
+        startChallenge(challenge, false);
+    }
+
+    public void startChallenge(Challenge challenge, boolean isTestingMode) {
+        this.activeChallenge = challenge;
+        this.isTestingMode = isTestingMode;
+        startGame();
+        System.out.println("Started Challenge: " + challenge.getName() + (isTestingMode ? " (TEST MODE)" : ""));
+    }
+
+    public boolean isTestingMode() {
+        return isTestingMode;
+    }
+
     public static GameController getInstance() {
         if (instance == null) {
             instance = new GameController();
@@ -182,6 +201,7 @@ public class GameController {
         deck.clear();
 
         // Explicitly trying to find Spear Goblins to include
+        // Also ensure Giant and Knight are included for combo testing if possible
         Card spearGoblins = CardLibrary.getCardByName("Spear Goblins");
         if (spearGoblins != null) {
             deck.addCard(spearGoblins);
@@ -288,6 +308,16 @@ public class GameController {
         isGameRunning = false;
         gameResult = null;
 
+        // Clear challenge state
+        activeChallenge = null;
+        isTestingMode = false;
+
+        if (savedPlayerDeck != null) {
+            this.deck = savedPlayerDeck;
+            this.savedPlayerDeck = null;
+            System.out.println("Restored player deck after reset.");
+        }
+
         System.out.println("Game mode reset to normal.");
     }
 
@@ -295,6 +325,20 @@ public class GameController {
         isGameRunning = true;
         isPaused = false;
         gameResult = null;
+        // Don't reset isTestingMode here as it might have been set by startChallenge
+        // ensuring it defaults to false for normal games if not set explicitly via
+        // startChallenge
+        if (activeChallenge == null) {
+            isTestingMode = false;
+        } else {
+            if (activeChallenge.isDeckProvided()) {
+                this.savedPlayerDeck = this.deck;
+                activeChallenge.onGameStart(this);
+                System.out.println("Challenge deck provided. Player deck saved.");
+            }
+        }
+
+        activeUnits.clear(); // Fix: Clear units from previous games
         activeBuildings.clear();
         activeEffects.clear();
         playerElixirManager = new ElixirManager(); // Reset player elixir
@@ -317,6 +361,9 @@ public class GameController {
         // Only set default if no towers exist (i.e. not customized)
         if (arena.getTowers().isEmpty()) {
             arena.setupDefaultTowers();
+        } else {
+            // Fix for Auto-Win bug: Reset existing towers (health) if reusing arena
+            arena.reset();
         }
 
         deck.initializeGameDeck();
@@ -378,6 +425,14 @@ public class GameController {
         gameTime -= scaledDeltaTime;
 
         // 1. Update Elixir
+        if (isTestingMode) {
+            playerElixirManager.setRegenerationRate(10.0); // Super fast for testing
+        } else {
+            // Standard (0-2m): 1 per 2.8s (~0.357)
+            // Double (2-3m): 1 per 1.4s (~0.714)
+            double rate = (gameTime < 120) ? (1.0 / 2.8) : (1.0 / 1.4);
+            playerElixirManager.setRegenerationRate(rate);
+        }
         playerElixirManager.update(scaledDeltaTime);
         if (isLocalPvP) {
             player2ElixirManager.update(scaledDeltaTime);
@@ -547,10 +602,6 @@ public class GameController {
         return nearest;
     }
 
-    private void applySpellDamage(Card card, double x, double y) {
-        applySpellDamage(card, x, y, null);
-    }
-
     private void applySpellDamage(Card card, double x, double y, CardProgression progression) {
         double radius = card.getRange();
         double radiusSq = radius * radius;
@@ -586,8 +637,10 @@ public class GameController {
                 double dy = tower.getY() - y;
                 // Tower hitbox is larger, but simple center check for now
                 if (dx * dx + dy * dy <= radiusSq) {
-                    tower.takeDamage(damage);
-                    totalDamageDealt += (int) damage;
+                    // Spells deal reduced damage to towers (40%)
+                    double towerDamage = damage * 0.4;
+                    tower.takeDamage(towerDamage);
+                    totalDamageDealt += (int) towerDamage;
                 }
             }
         }
@@ -701,7 +754,15 @@ public class GameController {
         }
 
         if (!rsc.spendElixir(cost)) {
-            return false;
+            // If remote player (Multiplayer and !isPlayer), we must allow it to sync
+            // The remote client is the authority on valid moves for themselves
+            if (isMultiplayer && !isPlayer) {
+                System.out.println("Forcing remote player move despite low local elixir calculation (Sync)");
+                // Force spend (might go negative locally, but keeps sync)
+                rsc.forceSpendElixir(cost);
+            } else {
+                return false;
+            }
         }
 
         // Get card progression for level bonuses
@@ -714,27 +775,24 @@ public class GameController {
         // Handle combo effects
         for (DetectedCombo detectedCombo : detectedCombos) {
             ComboEffect effect = detectedCombo.getEffect();
-            
             // Create visual effect for the combo
             ComboVisualEffect visual = new ComboVisualEffect(
-                x, y, 
-                detectedCombo.getComboType().getDisplayName(),
-                detectedCombo.getComboType(),
-                currentTime
-            );
+                    x, y,
+                    detectedCombo.getComboType().getDisplayName(),
+                    detectedCombo.getComboType(),
+                    currentTime);
             activeComboVisuals.add(visual);
-            
             // Special case: Elixir refund for Spell Synergy
             if (effect.getEffectType() == ComboEffectType.ELIXIR_REFUND) {
                 int refundAmount = (int) effect.getValue();
                 rsc.addElixir(refundAmount);
-                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
-                                  " - Refunded " + refundAmount + " Elixir!");
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() +
+                        " - Refunded " + refundAmount + " Elixir!");
             } else {
                 // Apply effects to units/buildings
                 ComboEffectApplier.applyComboEffect(detectedCombo, activeUnits, activeBuildings, isPlayer);
-                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
-                                  " - Effect applied!");
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() +
+                        " - Effect applied!");
             }
         }
 
@@ -784,9 +842,134 @@ public class GameController {
         return true;
     }
 
+    private long multiplayerSeed;
+    private java.util.List<Tower> opponentTowers = new java.util.ArrayList<>();
+    private boolean isLocalReady = false;
+    private boolean isRemoteReady = false;
+    private boolean isPeerConnected = false;
+
+    public void setMultiplayerSeed(long seed) {
+        this.multiplayerSeed = seed;
+        // Apply synchronized bridge layout
+        if (arena != null) {
+            arena.setupFixedBridges();
+            System.out.println("Applied fixed bridges (seed ignored)");
+        }
+    }
+
+    public void resetMultiplayerStates() {
+        isLocalReady = false;
+        isRemoteReady = false;
+        isPeerConnected = false;
+        opponentTowers.clear();
+    }
+
+    public boolean isPeerConnected() {
+        return isPeerConnected;
+    }
+
+    public void setPeerConnected(boolean connected) {
+        this.isPeerConnected = connected;
+    }
+
+    public boolean isLocalReady() {
+        return isLocalReady;
+    }
+
+    public void setLocalReady(boolean ready) {
+        this.isLocalReady = ready;
+    }
+
+    public boolean isRemoteReady() {
+        return isRemoteReady;
+    }
+
+    public void setRemoteReady(boolean ready) {
+        this.isRemoteReady = ready;
+    }
+
+    public void setOpponentTowers(String layoutData) {
+        opponentTowers.clear();
+        String[] towerStrings = layoutData.split(";");
+        for (String ts : towerStrings) {
+            if (ts.isEmpty())
+                continue;
+            try {
+                // Format: Type,x,y
+                String[] parts = ts.split(",");
+                String type = parts[0];
+                double x = Double.parseDouble(parts[1]);
+                double y = Double.parseDouble(parts[2]);
+                opponentTowers.add(new Tower(type, x, y, false));
+            } catch (Exception e) {
+                System.err.println("Error parsing opponent tower: " + ts);
+            }
+        }
+    }
+
+    public long getMultiplayerSeed() {
+        return multiplayerSeed;
+    }
+
     public void startMultiplayerGame() {
         this.isMultiplayer = true;
         this.isPaused = false;
+
+        // Setup Arena for Multiplayer
+        if (arena != null) {
+            // 1. Bridges
+            arena.setupFixedBridges();
+
+            // 2. Towers
+            // Capture local towers (Player) before clearing
+            java.util.List<Tower> localTowers = new java.util.ArrayList<>();
+            for (Tower t : arena.getTowers()) {
+                if (t.isPlayer()) {
+                    localTowers.add(t);
+                }
+            }
+
+            arena.clearTowers();
+
+            // Add Local Towers
+            for (Tower t : localTowers) {
+                arena.addTower(t);
+            }
+
+            // Add Opponent Towers (Mirrored)
+            for (Tower opRequest : opponentTowers) {
+                // Opponent sent their setup as if they were bottom (Player).
+                // We must mirror them to Top.
+                // wait, if they sent x,y relative to them (Bottom), we mirror to Top.
+                // My logic in setOpponentTowers just parsed x,y.
+                // Mirror now:
+                double mirrorX = opRequest.getX(); // X is preserved usually? No, mirror X too for perspective?
+                // Standard Clash Royale: Enemy left is my right?
+                // If enemy puts King at 9,30 (Bottom Center).
+                // I see it at 9, 2 (Top Center).
+                // So X is same (9), Y is mirrored (Height - Y).
+                // Wait, if he puts Princess at Left (3.5), it should appear on my Right (Top
+                // Right)?
+                // Or does it appear on my Left (Top Left)?
+                // Usually lane mirroring. Left lane fights Right lane?
+                // Visual mirror:
+                // His 3.5 (Left) -> My 14.5 (Right) on Top?
+                // Let's stick to X Mirroring for true PvP perspective.
+
+                double mirrorXCoord = arena.getWidth() - opRequest.getX();
+                double mirrorYCoord = arena.getHeight() - opRequest.getY();
+
+                arena.addTower(new Tower(opRequest.getType(), mirrorXCoord, mirrorYCoord, false));
+            }
+
+            // If no opponent towers (e.g. error/sync fail), add defaults?
+            if (opponentTowers.isEmpty()) {
+                System.out.println("No opponent towers received! Adding defaults.");
+                arena.addTower(new Tower("KING", 9.0, 2.0, false));
+                arena.addTower(new Tower("PRINCESS", 3.5, 5.5, false));
+                arena.addTower(new Tower("PRINCESS", 14.5, 5.5, false));
+            }
+        }
 
         // Setup listener
         networkManager.setMessageHandler(this::handleIncomingMessage);
@@ -954,8 +1137,6 @@ public class GameController {
         }
     }
 
-    private Challenge activeChallenge;
-
     /**
      * Ends the game and sets the result
      */
@@ -979,9 +1160,27 @@ public class GameController {
 
         if ("WIN".equals(result)) {
             qm.onMatchWon(isMultiplayer);
+            if (playerProfile != null) {
+                playerProfile.incrementWins();
+                playerProfile.addGold(150); // Victory Gold
+            }
         } else if ("LOSS".equals(result)) {
             qm.onMatchLost();
+            if (playerProfile != null) {
+                playerProfile.incrementLosses();
+                playerProfile.addGold(50); // Defeat Gold
+            }
+        } else {
+            if (playerProfile != null) {
+                playerProfile.addGold(75); // Draw Gold
+            }
         }
+
+        if (playerProfile != null) {
+            playerProfile.incrementMatchesPlayed();
+        }
+
+        saveGame(); // Save progress at end of match
 
         // Handle Challenge Completion
         if (activeChallenge != null && "WIN".equals(result)) {
@@ -992,12 +1191,6 @@ public class GameController {
                         "Challenge Complete! Stars: " + stars + " Reward: " + activeChallenge.getReward() + " Gold");
             }
         }
-    }
-
-    public void startChallenge(Challenge challenge) {
-        this.activeChallenge = challenge;
-        challenge.onGameStart(this);
-        startGame();
     }
 
     public Challenge getActiveChallenge() {

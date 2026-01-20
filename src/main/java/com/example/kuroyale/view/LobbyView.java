@@ -2,6 +2,7 @@ package com.example.kuroyale.view;
 
 import com.example.kuroyale.network.NetworkManager;
 import com.example.kuroyale.protocol.Message;
+import com.example.kuroyale.controller.GameController;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,17 +11,26 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import java.io.IOException;
+import java.util.Random;
 
 public class LobbyView {
 
     private ClashRoyaleFX app;
     private NetworkManager networkManager;
+    private GameController controller;
     private Label statusLabel;
     private Button startButton;
+    private Button readyButton;
+
+    // Persist host/join state across view reloads (if backing out to deck builder)
+    // This could be moved to a robust storage, but static here is a simple hack for
+    // now
+    // or rely on NetworkManager.isConnected()
 
     public LobbyView(ClashRoyaleFX app) {
         this.app = app;
         this.networkManager = NetworkManager.getInstance();
+        this.controller = GameController.getInstance();
     }
 
     public Parent getView() {
@@ -32,160 +42,261 @@ public class LobbyView {
         Label titleLabel = new Label("Multiplayer Lobby");
         titleLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: white; -fx-font-weight: bold;");
 
-        // Host Section
-        VBox hostBox = new VBox(10);
-        hostBox.setStyle(
-                "-fx-border-color: #ecf0f1; -fx-border-width: 1px; -fx-padding: 15px; -fx-background-color: #34495e;");
-        hostBox.setAlignment(Pos.CENTER);
+        // Preparation Section
+        HBox prepBox = new HBox(15);
+        prepBox.setAlignment(Pos.CENTER);
 
-        Label hostTitle = new Label("Host Game");
-        hostTitle.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+        Button btnDeck = new Button("Build Deck");
+        btnDeck.setOnAction(e -> app.showDeckBuilder());
 
-        TextField hostPortField = new TextField("8080");
-        hostPortField.setPromptText("Port");
-        hostPortField.setMaxWidth(100);
+        Button btnArena = new Button("Design Arena");
+        btnArena.setOnAction(e -> app.showArenaDesigner(true));
 
-        Button hostButton = new Button("Start Host");
-        hostButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        prepBox.getChildren().addAll(btnDeck, btnArena);
 
-        hostBox.getChildren().addAll(hostTitle, new Label("Port:"), hostPortField, hostButton);
+        // Connection Panels
+        VBox connectionPanel = new VBox(20);
+        connectionPanel.setAlignment(Pos.CENTER);
 
-        // Join Section
-        VBox joinBox = new VBox(10);
-        joinBox.setStyle(
-                "-fx-border-color: #ecf0f1; -fx-border-width: 1px; -fx-padding: 15px; -fx-background-color: #34495e;");
-        joinBox.setAlignment(Pos.CENTER);
+        if (networkManager.isConnected() || networkManager.isHost()) {
+            // Already connected/hosting - show active lobby state
+            Label connectedLabel = new Label("Session Active");
+            connectedLabel.setStyle("-fx-text-fill: lightgreen; -fx-font-size: 16px;");
+            connectionPanel.getChildren().add(connectedLabel);
 
-        Label joinTitle = new Label("Join Game");
-        joinTitle.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+            // Re-hook handler because view was recreated
+            setupNetworkHandler();
+        } else {
+            // Host Section
+            VBox hostBox = new VBox(10);
+            hostBox.setStyle(
+                    "-fx-border-color: #ecf0f1; -fx-border-width: 1px; -fx-padding: 15px; -fx-background-color: #34495e;");
+            hostBox.setAlignment(Pos.CENTER);
+            Label hostTitle = new Label("Host Game");
+            hostTitle.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+            TextField hostPortField = new TextField("8080");
+            hostPortField.setMaxWidth(100);
+            Button hostButton = new Button("Start Host");
+            hostButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
 
-        HBox connectionBox = new HBox(10);
-        connectionBox.setAlignment(Pos.CENTER);
+            hostButton.setOnAction(e -> {
+                try {
+                    int port = Integer.parseInt(hostPortField.getText());
+                    networkManager.startHost(port);
+                    statusLabel.setText("Hosting on port " + port + "... Waiting.");
+                    setupNetworkHandler();
 
-        TextField ipField = new TextField("127.0.0.1");
-        ipField.setPromptText("IP Address");
+                    // Host generates seed immediately
+                    long seed = new Random().nextLong();
+                    controller.setMultiplayerSeed(seed);
+                    // We will send this seed to client when they join
 
-        TextField joinPortField = new TextField("8080");
-        joinPortField.setPromptText("Port");
-        joinPortField.setPrefWidth(80);
+                    refreshUIState(connectionPanel, root);
+                } catch (Exception ex) {
+                    statusLabel.setText("Error: " + ex.getMessage());
+                }
+            });
+            hostBox.getChildren().addAll(hostTitle, new Label("Port:"), hostPortField, hostButton);
 
-        connectionBox.getChildren().addAll(ipField, joinPortField);
+            // Join Section
+            VBox joinBox = new VBox(10);
+            joinBox.setStyle(
+                    "-fx-border-color: #ecf0f1; -fx-border-width: 1px; -fx-padding: 15px; -fx-background-color: #34495e;");
+            joinBox.setAlignment(Pos.CENTER);
+            Label joinTitle = new Label("Join Game");
+            joinTitle.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+            TextField ipField = new TextField("127.0.0.1");
+            TextField joinPortField = new TextField("8080");
+            Button joinButton = new Button("Connect");
+            joinButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
 
-        Button joinButton = new Button("Connect");
-        joinButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
+            joinButton.setOnAction(e -> {
+                try {
+                    String ip = ipField.getText();
+                    int port = Integer.parseInt(joinPortField.getText());
+                    networkManager.connect(ip, port);
+                    statusLabel.setText("Connected to " + ip + ":" + port);
+                    setupNetworkHandler();
+                    refreshUIState(connectionPanel, root);
+                } catch (Exception ex) {
+                    statusLabel.setText("Connection Failed: " + ex.getMessage());
+                }
+            });
+            joinBox.getChildren().addAll(joinTitle, new Label("IP:"), ipField, new Label("Port:"), joinPortField,
+                    joinButton);
 
-        joinBox.getChildren().addAll(joinTitle, connectionBox, joinButton);
+            connectionPanel.getChildren().addAll(hostBox, joinBox);
+        }
 
-        // Status Area
+        // Status & Controls
         statusLabel = new Label("Status: Not Connected");
         statusLabel.setStyle("-fx-text-fill: #f1c40f; -fx-font-size: 14px;");
 
+        HBox controlBox = new HBox(15);
+        controlBox.setAlignment(Pos.CENTER);
+
+        readyButton = new Button("Ready");
+        readyButton.setStyle(
+                "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
+        readyButton.setDisable(true); // Default to disabled
+        readyButton.setOnAction(e -> toggleReady());
+
         startButton = new Button("Start Match");
-        startButton.setDisable(true); // Enabled when connected
         startButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-size: 16px;");
+        startButton.setDisable(true);
         startButton.setOnAction(e -> startGame());
 
-        Button backButton = new Button("Back to Main Menu");
+        controlBox.getChildren().addAll(readyButton, startButton);
+
+        Button backButton = new Button("Main Menu");
         backButton.setOnAction(e -> app.showMainMenu());
 
-        root.getChildren().addAll(titleLabel, hostBox, joinBox, statusLabel, startButton, backButton);
+        root.getChildren().addAll(titleLabel, prepBox, connectionPanel, statusLabel, controlBox, backButton);
 
-        // Actions
-        hostButton.setOnAction(e -> {
-            try {
-                int port = Integer.parseInt(hostPortField.getText());
-                networkManager.startHost(port);
-                statusLabel.setText("Status: Hosting on port " + port + "... Waiting for player.");
-                setupNetworkHandler();
-                hostButton.setDisable(true);
-                joinButton.setDisable(true);
-            } catch (NumberFormatException ex) {
-                statusLabel.setText("Error: Invalid Port");
-            } catch (IOException ex) {
-                statusLabel.setText("Error: " + ex.getMessage());
-            }
-        });
+        // Initial State check: Enable Ready button if session is active and not already
+        // ready
+        boolean sessionActive = networkManager.isConnected() || networkManager.isHost();
+        boolean alreadyReady = controller.isLocalReady();
 
-        joinButton.setOnAction(e -> {
-            try {
-                String ip = ipField.getText();
-                int port = Integer.parseInt(joinPortField.getText());
-                statusLabel.setText("Status: Connecting...");
-                networkManager.connect(ip, port);
-                statusLabel.setText("Status: Connected to " + ip + ":" + port);
-                setupNetworkHandler();
-                hostButton.setDisable(true);
-                joinButton.setDisable(true);
-                startButton.setDisable(false); // Enable for joiner too? Or wait for host?
-                // Usually Host starts, but for simplicity allow both to click for now
-                // or better: Wait for "START" message if client.
-                if (!networkManager.isHost()) {
-                    startButton.setText("Waiting for Host to Start...");
-                    startButton.setDisable(true);
-                }
-            } catch (NumberFormatException ex) {
-                statusLabel.setText("Error: Invalid Port");
-            } catch (IOException ex) {
-                statusLabel.setText("Error: Connection Failed - " + ex.getMessage());
-            }
-        });
+        if (sessionActive && !alreadyReady) {
+            // Enable Ready button for anyone in an active session who hasn't clicked Ready
+            // yet
+            readyButton.setDisable(false);
+            System.out.println("Ready button ENABLED (session active, not yet ready)");
+        } else if (alreadyReady) {
+            // Already clicked Ready - show locked state
+            applyLocalReadyUI();
+            System.out.println("Ready button LOCKED (already ready)");
+        } else {
+            System.out.println("Ready button DISABLED (no session)");
+        }
+
+        checkStartCondition();
 
         return root;
     }
 
+    private void refreshUIState(VBox connectionPanel, VBox root) {
+        connectionPanel.getChildren().clear();
+        Label connected = new Label("Waiting for Opponent...");
+        connected.setStyle("-fx-text-fill: #f39c12; -fx-font-size: 16px;");
+        connectionPanel.getChildren().add(connected);
+
+        // Keep readyButton disabled until peer arrives
+    }
+
+    private void toggleReady() {
+        if (!controller.isDeckReady()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Not Ready");
+            alert.setContentText("You must build a valid Deck before playing!");
+            alert.showAndWait();
+            return;
+        }
+
+        if (!controller.isArenaReady()) {
+            if (controller.getArena().getTowers().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Not Ready");
+                alert.setContentText("You must design your Arena (place Towers)!");
+                alert.showAndWait();
+                return;
+            }
+        }
+
+        // Serialize and Send Tower Layout
+        StringBuilder sb = new StringBuilder();
+        for (com.example.kuroyale.model.Tower t : controller.getArena().getTowers()) {
+            if (t.isPlayer()) { // Only send my towers
+                sb.append(t.getType()).append(",").append(t.getX()).append(",").append(t.getY()).append(";");
+            }
+        }
+        networkManager.sendMessage(
+                new Message(Message.MessageType.TOWER_LAYOUT, networkManager.getLocalPlayerId(), sb.toString()));
+
+        controller.setLocalReady(true);
+        applyLocalReadyUI();
+
+        networkManager
+                .sendMessage(new Message(Message.MessageType.PLAYER_READY, networkManager.getLocalPlayerId(), null));
+        checkStartCondition();
+    }
+
+    private void applyLocalReadyUI() {
+        readyButton.setDisable(true); // Lock in
+        readyButton.setText("Ready!");
+        readyButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+    }
+
+    private void checkStartCondition() {
+        boolean local = controller.isLocalReady();
+        boolean remote = controller.isRemoteReady();
+        if (local && remote) {
+            statusLabel.setText("Both Players Ready! Waiting for Host...");
+            if (networkManager.isHost()) {
+                startButton.setDisable(false);
+            }
+        } else {
+            statusLabel.setText(
+                    "Waiting for players to be Ready... (You: " + (local ? "Ready" : "Not Ready") + ", Opponent: "
+                            + (remote ? "Ready" : "Not Ready") + ")");
+        }
+    }
+
     private void setupNetworkHandler() {
         networkManager.setMessageHandler(msg -> {
-            Platform.runLater(() -> {
-                handleMessage(msg);
-            });
+            Platform.runLater(() -> handleMessage(msg));
         });
 
-        // If Host, we might want to enable start button once a client connects.
-        // Currently NetworkManager doesn't explicitly notify "client connected" event
-        // separate from messages.
-        // We can add a simple ping or just assume if we receive anything or if the
-        // socket is live.
-        // For now, let's enable Start button for Host immediately (waiting for
-        // connection happens in background).
-        // Actually, we need to know when client connects to enable start.
-        // NetworkManager implementation printed "Client connected", but didn't
-        // callback.
-        // Let's improve NetworkManager to send a local "Connected" event or just rely
-        // on manual coordination for now.
-        // Improvement: Host sends "Ping" after accept, Client replies.
-
-        if (networkManager.isHost()) {
-            // Polling or waiting for first message?
-            // Let's Just enable Start button for Host. If they click it before client
-            // connects, the message send will fail/queue.
-            statusLabel.setText("Status: Hosting... (Wait for client to join)");
-
-            // In a real lobby, we'd wait for a JOIN message.
-            // Let's assume the Client sends a JOIN_REQUEST on connect.
-        } else {
-            // Client just connected. Send Join Request.
-            networkManager.sendMessage(new Message(Message.MessageType.JOIN_REQUEST, 2, "Player 2"));
+        // If client, send join request immediately
+        if (!networkManager.isHost() && networkManager.isConnected()) {
+            // networkManager.sendMessage(new Message(Message.MessageType.JOIN_REQUEST, 2,
+            // "Player 2"));
         }
     }
 
     private void handleMessage(Message msg) {
         switch (msg.getType()) {
             case JOIN_REQUEST:
-                statusLabel.setText("Status: Client Connected!");
+                statusLabel.setText("Client Connected!");
+                controller.setPeerConnected(true);
+                readyButton.setDisable(false);
                 if (networkManager.isHost()) {
-                    startButton.setDisable(false);
-                    // Reply with Accept
                     networkManager.sendMessage(new Message(Message.MessageType.JOIN_ACCEPT, 1, "Player 1"));
+                    // Send Seed
+                    long seed = controller.getMultiplayerSeed();
+                    networkManager.sendMessage(new Message(Message.MessageType.BRIDGE_SEED, 1, String.valueOf(seed)));
                 }
                 break;
             case JOIN_ACCEPT:
-                statusLabel.setText("Status: Joined! Waiting for host to start.");
+                statusLabel.setText("Joined! Waiting for seed...");
+                controller.setPeerConnected(true);
+                readyButton.setDisable(false);
+                break;
+            case BRIDGE_SEED:
+                try {
+                    long seed = Long.parseLong(msg.getData().toString());
+                    controller.setMultiplayerSeed(seed);
+                    statusLabel.setText("Synced with Host.");
+                } catch (Exception e) {
+                    System.err.println("Failed to parse bridge seed: " + msg.getData());
+                }
+                break;
+            case TOWER_LAYOUT:
+                controller.setOpponentTowers((String) msg.getData());
+                System.out.println("Received Opponent Tower Layout.");
+                break;
+            case PLAYER_READY:
+                controller.setRemoteReady(true);
+                checkStartCondition();
                 break;
             case START_MATCH:
+                controller.startMultiplayerGame();
                 app.showGameView();
                 break;
             case DISCONNECT:
-                statusLabel.setText("Status: Opponent Disconnected");
+                statusLabel.setText("Opponent Disconnected");
+                controller.setRemoteReady(false);
                 startButton.setDisable(true);
                 break;
             default:
@@ -194,8 +305,8 @@ public class LobbyView {
     }
 
     private void startGame() {
-        // Send START_MATCH to opponent
         networkManager.sendMessage(new Message(Message.MessageType.START_MATCH, 1, null));
+        controller.startMultiplayerGame();
         app.showGameView();
     }
 }

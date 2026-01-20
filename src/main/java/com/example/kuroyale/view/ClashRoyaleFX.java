@@ -29,10 +29,14 @@ public class ClashRoyaleFX extends Application {
         primaryStage.setScene(scene);
     }
 
-    public void showArenaDesigner() {
-        ArenaDesignView view = new ArenaDesignView(this);
+    public void showArenaDesigner(boolean isMultiplayer) {
+        ArenaDesignView view = new ArenaDesignView(this, isMultiplayer);
         Scene scene = new Scene(view.getView(), 500, 850);
         primaryStage.setScene(scene);
+    }
+
+    public void showArenaDesigner() {
+        showArenaDesigner(false); // Default (from Main Menu)
     }
 
     public void showGameView() {

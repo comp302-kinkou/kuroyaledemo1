@@ -58,6 +58,12 @@ public class Arena {
         towers.clear();
     }
 
+    public void reset() {
+        for (Tower tower : towers) {
+            tower.reset();
+        }
+    }
+
     public void clearBridges() {
         bridges.clear();
     }
@@ -74,6 +80,14 @@ public class Arena {
 
         bridges.add(new Bridge(name, x, 2.0));
         return true;
+    }
+
+    public void setupFixedBridges() {
+        bridges.clear();
+        // Fixed Bridge 1 at ~1/3 (width=18, so x=5.0 is safe)
+        addBridge("Bridge 1", 5.0);
+        // Fixed Bridge 2 at ~2/3 (width=18, so x=11.0 is safe)
+        addBridge("Bridge 2", 11.0);
     }
 
     public List<Tower> getTowers() {

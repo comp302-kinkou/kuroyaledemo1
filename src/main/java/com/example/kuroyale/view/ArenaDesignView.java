@@ -41,13 +41,42 @@ public class ArenaDesignView {
     private double canvasWidth;
     private double canvasHeight;
 
-    public ArenaDesignView(ClashRoyaleFX mainApp) {
+    private boolean isMultiplayerMode = false;
+
+    public ArenaDesignView(ClashRoyaleFX mainApp, boolean isMultiplayerMode) {
         this.mainApp = mainApp;
         this.controller = GameController.getInstance();
         this.arena = controller.getArena();
+        this.isMultiplayerMode = isMultiplayerMode;
 
         this.canvasWidth = arena.getWidth() * scale;
         this.canvasHeight = arena.getHeight() * scale;
+
+        loadCurrentDesign();
+    }
+
+    private void loadCurrentDesign() {
+        tempTowers.clear();
+        tempBridges.clear();
+
+        // Load existing towers from arena
+        for (Tower t : arena.getTowers()) {
+            if (t.isPlayer()) {
+                tempTowers.add(new Tower(t.getType(), t.getX(), t.getY(), true));
+            }
+        }
+
+        // Load bridges
+        if (isMultiplayerMode) {
+            // Requirement: 2 Bridges already present in default place
+            tempBridges.add(new Arena.Bridge("Bridge 1", 5.0, 2.0));
+            tempBridges.add(new Arena.Bridge("Bridge 2", 11.0, 2.0));
+        } else {
+            // Load existing bridges from arena (Singleplayer)
+            for (Arena.Bridge b : arena.getBridges()) {
+                tempBridges.add(new Arena.Bridge(b.name, b.x, b.width));
+            }
+        }
     }
 
     public Parent getView() {
@@ -64,6 +93,14 @@ public class ArenaDesignView {
         ToggleButton btnBridge = new ToggleButton("Place Bridge");
         btnBridge.setToggleGroup(toolsGroup);
         btnBridge.setUserData("BRIDGE");
+
+        // Disable bridge tool in multiplayer
+        if (isMultiplayerMode) {
+            btnBridge.setDisable(true);
+            btnBridge.setVisible(false); // Hide it to be cleaner? Or just disable.
+            // Let's hide it to avoid confusion
+            btnBridge.setManaged(false);
+        }
 
         ToggleButton btnKing = new ToggleButton("Place King Tower");
         btnKing.setToggleGroup(toolsGroup);
@@ -106,18 +143,25 @@ public class ArenaDesignView {
         btnSave.setStyle("-fx-font-weight: bold; -fx-background-color: lightgreen;");
         btnSave.setOnAction(e -> saveAndExit());
 
+        // Return to appropriate view
         Button btnBack = new Button("Cancel");
-        btnBack.setOnAction(e -> mainApp.showMainMenu());
+        btnBack.setOnAction(e -> {
+            if (isMultiplayerMode) {
+                mainApp.showLobby();
+            } else {
+                mainApp.showMainMenu();
+            }
+        });
 
-        Label instructions = new Label("Place: 1 King, 2 Princess, 1-3 Bridges on YOUR side (Bottom).");
+        Label instructions = new Label(
+                isMultiplayerMode ? "Place: 1 King, 2 Princess. Bridges are FIXED for this match."
+                        : "Place: 1 King, 2 Princess, 1-3 Bridges on YOUR side (Bottom).");
 
         VBox bottomBox = new VBox(10, instructions, actionsBox);
         bottomBox.setAlignment(Pos.CENTER);
         actionsBox.getChildren().addAll(btnSave, btnBack);
         root.setBottom(bottomBox);
 
-        // Initial render
-        clearDesign(); // Reset temp lists
         render();
 
         return root;
@@ -125,7 +169,10 @@ public class ArenaDesignView {
 
     private void clearDesign() {
         tempTowers.clear();
-        tempBridges.clear();
+        // In multiplayer, do NOT clear bridges
+        if (!isMultiplayerMode) {
+            tempBridges.clear();
+        }
         render();
     }
 
@@ -140,8 +187,11 @@ public class ArenaDesignView {
         boolean isBottomSide = gameY > arena.getRiverY(); // Player side is bottom > 16.0
 
         if (currentTool.equals("BRIDGE")) {
+            // Should be disabled but double check
+            if (isMultiplayerMode)
+                return;
+
             // Bridge must be ON the river (approx)
-            // Let's allow clicking anywhere near riverY, and snap to riverY
             if (Math.abs(gameY - arena.getRiverY()) > 3.0) {
                 showAlert("Invalid Position", "Bridges must be placed on the river!");
                 return;
@@ -150,9 +200,7 @@ public class ArenaDesignView {
                 showAlert("Limit Reached", "Max 3 bridges allowed.");
                 return;
             }
-            // Add Bridge
-            // Make sure it doesn't overlap too much? Simplified for now.
-            tempBridges.add(new Arena.Bridge("Bridge " + (tempBridges.size() + 1), gameX - 1.0, 2.0)); // centered width
+            tempBridges.add(new Arena.Bridge("Bridge " + (tempBridges.size() + 1), gameX - 1.0, 2.0));
 
         } else if (currentTool.equals("KING") || currentTool.equals("PRINCESS")) {
             if (!isBottomSide) {
@@ -210,7 +258,7 @@ public class ArenaDesignView {
 
         // Draw Towers
         for (Tower t : tempTowers) {
-            if (t.getHealth() >= 4000)
+            if ("KING".equals(t.getType()))
                 gc.setFill(Color.GOLD); // King
             else
                 gc.setFill(Color.MAGENTA); // Princess
@@ -222,9 +270,7 @@ public class ArenaDesignView {
         // Draw Mirror Preview (Enemy)
         for (Tower t : tempTowers) {
             double mirrorX = t.getX();
-
             double mirrorY = (arena.getHeight()) - t.getY();
-
             gc.setStroke(Color.RED);
             gc.setLineWidth(2);
             double size = 1.0 * scale;
@@ -234,8 +280,8 @@ public class ArenaDesignView {
 
     private void saveAndExit() {
         // Validate
-        long kingCount = tempTowers.stream().filter(t -> t.getHealth() >= 4000).count();
-        long princessCount = tempTowers.stream().filter(t -> t.getHealth() < 4000).count();
+        long kingCount = tempTowers.stream().filter(t -> "KING".equals(t.getType())).count();
+        long princessCount = tempTowers.stream().filter(t -> "PRINCESS".equals(t.getType())).count();
 
         if (kingCount != 1 || princessCount != 2) {
             showAlert("Incomplete Design", "You must place 1 King Tower and 2 Princess Towers.");
@@ -249,7 +295,26 @@ public class ArenaDesignView {
 
         // Update Actual Arena
         arena.clearTowers();
-        arena.clearBridges();
+
+        // In multiplayer, DO NOT clear/update bridges if we didn't touch them (which we
+        // couldn't)
+        // But tempBridges holds the synced bridges anyway.
+        // Safer to just allow overwrite IF tempBridges matches synced state, but
+        // simpler:
+        // just blindly overwrite since tempBridges started as copy and couldn't be
+        // changed.
+        // Wait, if we overwrite, we might lose precision? No, copies are fine.
+
+        // Actually, if we are in multiplayer, let's explicitly NOT touch bridges in the
+        // arena object
+        // to be absolutely safe against drift, although re-adding same values is fine.
+        if (!isMultiplayerMode) {
+            arena.clearBridges();
+            for (Arena.Bridge b : tempBridges) {
+                arena.addBridge(b.name, b.x);
+            }
+        }
+        // If multiplayer, bridges are untouched in `arena` object.
 
         // Add Player Towers
         for (Tower t : tempTowers) {
@@ -259,20 +324,19 @@ public class ArenaDesignView {
         // Add Enemy Towers (Mirrored)
         for (Tower t : tempTowers) {
             double mirrorY = arena.getHeight() - t.getY();
-            // Assuming Type based on HP again
-            String type = (t.getHealth() >= 4000) ? "KING" : "PRINCESS";
+            // Use explicit type
+            String type = t.getType();
             arena.addTower(new Tower(type, t.getX(), mirrorY, false));
-        }
-
-        // 3. Reconstruct the Bridges
-        for (Arena.Bridge b : tempBridges) {
-            arena.addBridge(b.name, b.x);
         }
 
         controller.confirmArenaDesign();
 
         showAlert("Saved", "Arena design saved successfully!");
-        mainApp.showMainMenu();
+        if (isMultiplayerMode) {
+            mainApp.showLobby();
+        } else {
+            mainApp.showMainMenu();
+        }
     }
 
     private void showAlert(String title, String content) {
