@@ -153,19 +153,24 @@ public class LobbyView {
 
         root.getChildren().addAll(titleLabel, prepBox, connectionPanel, statusLabel, controlBox, backButton);
 
-        // Initial State check: Aggressive restoration
-        boolean connected = networkManager.isConnected();
-        boolean isHost = networkManager.isHost();
+        // Initial State check: Enable Ready button if session is active and not already
+        // ready
+        boolean sessionActive = networkManager.isConnected() || networkManager.isHost();
+        boolean alreadyReady = controller.isLocalReady();
 
-        // If we are Host, we need a peer to be connected.
-        // If we are Client, being connected implies Host is there.
-        if (connected && (isHost ? controller.isPeerConnected() : true)) {
+        if (sessionActive && !alreadyReady) {
+            // Enable Ready button for anyone in an active session who hasn't clicked Ready
+            // yet
             readyButton.setDisable(false);
+            System.out.println("Ready button ENABLED (session active, not yet ready)");
+        } else if (alreadyReady) {
+            // Already clicked Ready - show locked state
+            applyLocalReadyUI();
+            System.out.println("Ready button LOCKED (already ready)");
+        } else {
+            System.out.println("Ready button DISABLED (no session)");
         }
 
-        if (controller.isLocalReady()) {
-            applyLocalReadyUI();
-        }
         checkStartCondition();
 
         return root;
