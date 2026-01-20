@@ -26,6 +26,17 @@ public class Building {
     private TransportType transportType;
     private TargetType targetType;
 
+    // Combo effect modifiers (stack multiplicatively)
+    private double damageMultiplier = 1.0;
+    private double healthMultiplier = 1.0;
+    private double rangeBoost = 0.0;
+
+    // Base stats (stored to apply multipliers correctly)
+    private double baseDamage;
+    private double baseHealth;
+    private double baseMaxHealth;
+    private double baseRange;
+
     public Building(String name, double x, double y, boolean isPlayer, double health,
             double damage, double range, double hitSpeed, double lifetime,
             String buildingType, TransportType transportType, TargetType targetType) {
@@ -46,6 +57,12 @@ public class Building {
         this.timeSinceLastSpawn = 0.0;
         this.transportType = transportType;
         this.targetType = targetType;
+        
+        // Store base stats
+        this.baseDamage = damage;
+        this.baseHealth = health;
+        this.baseMaxHealth = health;
+        this.baseRange = range;
     }
 
     /**
@@ -163,15 +180,18 @@ public class Building {
     }
 
     public double getMaxHealth() {
-        return maxHealth;
+        // Return base max health with multiplier applied
+        return baseMaxHealth * healthMultiplier;
     }
 
     public double getDamage() {
-        return damage;
+        // Return base damage with multiplier applied
+        return baseDamage * damageMultiplier;
     }
 
     public double getRange() {
-        return range;
+        // Return base range with boost applied
+        return baseRange + rangeBoost;
     }
 
     public double getTimeAlive() {
@@ -200,5 +220,25 @@ public class Building {
 
     public TargetType getTargetType() {
         return targetType;
+    }
+
+    // Combo effect application methods
+    public void applyDamageMultiplier(double multiplier) {
+        this.damageMultiplier *= multiplier;
+    }
+
+    public void applyHealthMultiplier(double multiplier) {
+        // Apply to current health proportionally
+        double healthRatio = health / baseMaxHealth;
+        this.healthMultiplier *= multiplier;
+        this.baseMaxHealth *= multiplier;
+        this.baseHealth *= multiplier;
+        this.health = baseMaxHealth * healthRatio;
+        // Also update maxHealth for consistency
+        this.maxHealth = baseMaxHealth;
+    }
+
+    public void addRange(double amount) {
+        this.rangeBoost += amount;
     }
 }
