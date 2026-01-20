@@ -1,9 +1,11 @@
 package com.example.kuroyale.view;
 
 import com.example.kuroyale.controller.GameController;
+import com.example.kuroyale.controller.GameController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -11,9 +13,11 @@ import javafx.scene.layout.VBox;
 public class MainMenuView {
 
     private ClashRoyaleFX mainApp;
+    private GameController controller;
 
     public MainMenuView(ClashRoyaleFX mainApp) {
         this.mainApp = mainApp;
+        this.controller = GameController.getInstance();
     }
 
     public Parent getView() {
@@ -60,12 +64,28 @@ public class MainMenuView {
         btnMultiplayer.setMaxWidth(200);
         btnMultiplayer.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
 
+        Button btnLocalPvP = new Button("Local PvP");
+        btnLocalPvP.setOnAction(e -> {
+            // Check if arena is designed first
+            if (!controller.isArenaReady()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Arena Not Ready");
+                alert.setHeaderText(null);
+                alert.setContentText("Please design the arena first before starting Local PvP!");
+                alert.showAndWait();
+                return;
+            }
+            mainApp.showLocalPvPDeckSelection();
+        });
+        btnLocalPvP.setMaxWidth(200);
+        btnLocalPvP.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+
         Button btnExit = new Button("Exit");
         btnExit.setOnAction(e -> System.exit(0));
         btnExit.setMaxWidth(200);
 
         root.getChildren().addAll(titleLabel, goldLabel, btnDeckBuilder, btnArenaDesigner, btnStartGame,
-                btnChallengeMode, btnCardUpgrade, btnMultiplayer,
+                btnChallengeMode, btnCardUpgrade, btnMultiplayer, btnLocalPvP,
                 btnExit);
         return root;
     }
