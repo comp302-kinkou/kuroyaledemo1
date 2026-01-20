@@ -29,6 +29,17 @@ public class ElixirManager {
         return false;
     }
 
+    /**
+     * Spends elixir regardless of current amount. Used for syncing remote player
+     * moves.
+     */
+    public void forceSpendElixir(int amount) {
+        currentElixir -= amount;
+        // Optional: Clamp to 0 if we don't want negative elixir on client side,
+        // effectively treating it as "if remote says they played, they played".
+        // But allowing negative helps track if we are severely desynced.
+    }
+
     // Adds elixir (e.g., from combo refunds).
     // Caps at maxElixir.
     public void addElixir(int amount) {

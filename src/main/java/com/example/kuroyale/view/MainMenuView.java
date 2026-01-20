@@ -60,7 +60,13 @@ public class MainMenuView {
         btnCardUpgrade.setMaxWidth(200);
 
         Button btnMultiplayer = new Button("Multiplayer");
-        btnMultiplayer.setOnAction(e -> mainApp.showLobby());
+        btnMultiplayer.setOnAction(e -> {
+            if (GameController.getInstance().isGameReady()) {
+                mainApp.showLobby();
+            } else {
+                showAlert("Not Ready", "Please build a deck and design the arena before entering Multiplayer!");
+            }
+        });
         btnMultiplayer.setMaxWidth(200);
         btnMultiplayer.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
 
@@ -71,12 +77,12 @@ public class MainMenuView {
 
         Button btnLocalPvP = new Button("Local PvP");
         btnLocalPvP.setOnAction(e -> {
-            // Check if arena is designed first
-            if (!controller.isArenaReady()) {
+            // Check if game is ready (Deck + Arena)
+            if (!controller.isGameReady()) {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Arena Not Ready");
+                alert.setTitle("Not Ready");
                 alert.setHeaderText(null);
-                alert.setContentText("Please design the arena first before starting Local PvP!");
+                alert.setContentText("Please build a deck and design the arena before starting Local PvP!");
                 alert.showAndWait();
                 return;
             }

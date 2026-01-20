@@ -165,8 +165,17 @@ public class ChallengeSelectionView {
         GameController controller = GameController.getInstance();
 
         if (!controller.isGameReady()) {
-            showAlert("Not Ready", "Please build a deck and design the arena before starting a challenge!");
-            return;
+            // If challenge provides a deck, we only need Arena to be ready
+            if (challenge.isDeckProvided()) {
+                if (!controller.isArenaReady()) {
+                    showAlert("Not Ready", "Please design the arena before starting a challenge!");
+                    return;
+                }
+                // Allowed to proceed even if player deck isn't ready
+            } else {
+                showAlert("Not Ready", "Please build a deck and design the arena before starting a challenge!");
+                return;
+            }
         }
 
         // Validate Deck
@@ -185,15 +194,24 @@ public class ChallengeSelectionView {
         GameController controller = GameController.getInstance();
 
         if (!controller.isGameReady()) {
-            showAlert("Not Ready", "Please build a deck and design the arena before starting a challenge!");
-            return;
+            if (challenge.isDeckProvided()) {
+                if (!controller.isArenaReady()) {
+                    showAlert("Not Ready", "Please design the arena before starting a challenge!");
+                    return;
+                }
+            } else {
+                showAlert("Not Ready", "Please build a deck and design the arena before starting a challenge!");
+                return;
+            }
         }
 
         // Validate Deck
-        String error = challenge.validateDeck(controller.getDeck());
-        if (error != null) {
-            showAlert("Invalid Deck", "Your deck does not meet the challenge requirements:\n\n" + error);
-            return;
+        if (!challenge.isDeckProvided()) {
+            String error = challenge.validateDeck(controller.getDeck());
+            if (error != null) {
+                showAlert("Invalid Deck", "Your deck does not meet the challenge requirements:\n\n" + error);
+                return;
+            }
         }
 
         // Start Game in Test Mode

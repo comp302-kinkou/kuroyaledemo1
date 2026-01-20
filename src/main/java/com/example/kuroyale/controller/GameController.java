@@ -21,6 +21,7 @@ public class GameController {
     private static GameController instance;
 
     private Deck deck; // Player's deck
+    private Deck savedPlayerDeck; // For temporary deck swapping during challenges
     private Arena arena;
     private ElixirManager playerElixirManager;
     private ElixirManager computerElixirManager;
@@ -297,6 +298,12 @@ public class GameController {
         activeChallenge = null;
         isTestingMode = false;
 
+        if (savedPlayerDeck != null) {
+            this.deck = savedPlayerDeck;
+            this.savedPlayerDeck = null;
+            System.out.println("Restored player deck after reset.");
+        }
+
         System.out.println("Game mode reset to normal.");
     }
 
@@ -309,6 +316,12 @@ public class GameController {
         // startChallenge
         if (activeChallenge == null) {
             isTestingMode = false;
+        } else {
+            if (activeChallenge.isDeckProvided()) {
+                this.savedPlayerDeck = this.deck;
+                activeChallenge.onGameStart(this);
+                System.out.println("Challenge deck provided. Player deck saved.");
+            }
         }
 
         activeUnits.clear(); // Fix: Clear units from previous games
@@ -727,7 +740,15 @@ public class GameController {
         }
 
         if (!rsc.spendElixir(cost)) {
-            return false;
+            // If remote player (Multiplayer and !isPlayer), we must allow it to sync
+            // The remote client is the authority on valid moves for themselves
+            if (isMultiplayer && !isPlayer) {
+                System.out.println("Forcing remote player move despite low local elixir calculation (Sync)");
+                // Force spend (might go negative locally, but keeps sync)
+                rsc.forceSpendElixir(cost);
+            } else {
+                return false;
+            }
         }
 
         // Get card progression for level bonuses
@@ -805,6 +826,21 @@ public class GameController {
         }
 
         return true;
+    }
+
+    private long multiplayerSeed;
+
+    public void setMultiplayerSeed(long seed) {
+        this.multiplayerSeed = seed;
+        // Apply synchronized bridge layout
+        if (arena != null) {
+            arena.randomizeBridges(seed);
+            System.out.println("Applied synchronized bridge seed: " + seed);
+        }
+    }
+
+    public long getMultiplayerSeed() {
+        return multiplayerSeed;
     }
 
     public void startMultiplayerGame() {

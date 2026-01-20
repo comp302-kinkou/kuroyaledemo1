@@ -119,6 +119,10 @@ public class NetworkManager {
         return isHost;
     }
 
+    public boolean isConnected() {
+        return socket != null && isRunning && !socket.isClosed();
+    }
+
     public int getLocalPlayerId() {
         return localPlayerId;
     }

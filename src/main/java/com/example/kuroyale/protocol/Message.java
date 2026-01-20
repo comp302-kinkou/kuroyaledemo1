@@ -9,6 +9,7 @@ public class Message implements Serializable {
         JOIN_REQUEST,
         JOIN_ACCEPT,
         JOIN_REJECT,
+        BRIDGE_SEED,
         PLAYER_READY,
         START_MATCH,
         CARD_PLAYED,

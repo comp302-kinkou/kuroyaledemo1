@@ -66,4 +66,9 @@ public class TankRushChallenge implements Challenge {
             return 2;
         return 1;
     }
+
+    @Override
+    public boolean isDeckProvided() {
+        return true;
+    }
 }
