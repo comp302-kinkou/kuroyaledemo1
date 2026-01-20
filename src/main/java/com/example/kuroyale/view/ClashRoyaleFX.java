@@ -58,6 +58,12 @@ public class ClashRoyaleFX extends Application {
         primaryStage.setScene(scene);
     }
 
+    public void showQuestsAchievements() {
+        QuestsAchievementsView view = new QuestsAchievementsView(this);
+        Scene scene = new Scene(view.getView(), 600, 700);
+        primaryStage.setScene(scene);
+    }
+
     public void showLocalPvPDeckSelection() {
         LocalPvPDeckSelection view = new LocalPvPDeckSelection(this);
         Scene scene = new Scene(view.getView(), 800, 600);

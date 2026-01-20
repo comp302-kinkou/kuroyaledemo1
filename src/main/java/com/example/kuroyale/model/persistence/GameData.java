@@ -1,6 +1,7 @@
 package com.example.kuroyale.model.persistence;
 
 import com.example.kuroyale.model.CardProgression;
+import com.example.kuroyale.model.quest.AchievementData;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +13,14 @@ public class GameData implements Serializable {
     private List<CardProgression> cardProgressions;
     private QuestData questData;
     private ChallengeData challengeData;
+    private AchievementData achievementData;
 
     public GameData() {
         this.playerProfile = new PlayerProfile();
         this.cardProgressions = new ArrayList<>();
         this.questData = new QuestData();
         this.challengeData = new ChallengeData();
+        this.achievementData = new AchievementData();
     }
 
     public PlayerProfile getPlayerProfile() {
@@ -50,5 +53,13 @@ public class GameData implements Serializable {
 
     public void setChallengeData(ChallengeData challengeData) {
         this.challengeData = challengeData;
+    }
+
+    public AchievementData getAchievementData() {
+        return achievementData;
+    }
+
+    public void setAchievementData(AchievementData achievementData) {
+        this.achievementData = achievementData;
     }
 }
