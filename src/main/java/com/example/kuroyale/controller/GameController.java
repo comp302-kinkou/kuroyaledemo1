@@ -686,6 +686,13 @@ public class GameController {
         }
         return null; // Card not found in library
     }
+    
+    /**
+     * Gets all card progressions for stats display.
+     */
+    public java.util.Collection<CardProgression> getAllCardProgressions() {
+        return cardProgressions.values();
+    }
 
     // Upgrades a card to the next level if the player has enough gold.
     public boolean upgradeCard(Card card) {

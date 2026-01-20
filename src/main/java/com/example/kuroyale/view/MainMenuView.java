@@ -87,13 +87,18 @@ public class MainMenuView {
         btnLocalPvP.setMaxWidth(200);
         btnLocalPvP.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
 
+        Button btnPlayerStats = new Button("Player Stats");
+        btnPlayerStats.setOnAction(e -> mainApp.showPlayerStats());
+        btnPlayerStats.setMaxWidth(200);
+        btnPlayerStats.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+
         Button btnExit = new Button("Exit");
         btnExit.setOnAction(e -> System.exit(0));
         btnExit.setMaxWidth(200);
 
         root.getChildren().addAll(titleLabel, goldLabel, btnDeckBuilder, btnArenaDesigner, btnStartGame,
                 btnChallengeMode, btnCardUpgrade, btnMultiplayer, btnQuestsAchievements, btnLocalPvP,
-                btnExit);
+                btnPlayerStats, btnExit);
         return root;
     }
 
