@@ -26,11 +26,15 @@ public class ComboManager {
     // Tracks when each combo was last triggered (for cleanup)
     private List<ComboTriggerRecord> comboTriggerHistory;
 
+    // Tracks unique combo types triggered in the current match (for counter and rewards)
+    private Set<ComboType> uniqueCombosTriggered;
+
     public ComboManager() {
         this.recentCards = new LinkedList<>();
         this.allComboDefinitions = ComboDefinition.createAllComboDefinitions();
         this.recentlyTriggeredCombos = new HashSet<>();
         this.comboTriggerHistory = new ArrayList<>();
+        this.uniqueCombosTriggered = new HashSet<>();
     }
 
     /**
@@ -143,6 +147,9 @@ public class ComboManager {
                         // Mark as triggered
                         recentlyTriggeredCombos.add(comboKey);
                         comboTriggerHistory.add(new ComboTriggerRecord(comboKey, currentTimestamp));
+
+                        // Track unique combo type for match counter
+                        uniqueCombosTriggered.add(definition.getComboType());
                     }
                 }
             }
@@ -178,6 +185,17 @@ public class ComboManager {
         recentCards.clear();
         recentlyTriggeredCombos.clear();
         comboTriggerHistory.clear();
+        uniqueCombosTriggered.clear();
+    }
+
+    // Gets the number of unique combos triggered in the current match and returns the count of unique combo types triggered.
+    public int getUniqueComboCount() {
+        return uniqueCombosTriggered.size();
+    }
+
+    // Gets the set of unique combo types triggered in the current match and returns the set of ComboType enums that have been triggered.
+    public Set<ComboType> getUniqueCombosTriggered() {
+        return new HashSet<>(uniqueCombosTriggered);
     }
 
     // Gets the combo time window in milliseconds.
