@@ -51,6 +51,9 @@ public class GameController {
     // Combo System
     private ComboManager comboManager;
     private List<ComboVisualEffect> activeComboVisuals;
+    
+    // Tower destruction tracking for achievements
+    private java.util.Set<Integer> destroyedTowerIds = new java.util.HashSet<>();
 
     // Persistence Data
     private PlayerProfile playerProfile;
@@ -287,6 +290,7 @@ public class GameController {
 
         comboManager.reset(); // Reset combo manager for new game
         activeComboVisuals.clear(); // Clear combo visuals
+        destroyedTowerIds.clear(); // Reset tower tracking for achievements
 
         if (!isMultiplayer) {
             computerOpponent = new ComputerOpponent(this); // Reset opponent logic
@@ -314,6 +318,7 @@ public class GameController {
         activeUnits.clear();
         activeBuildings.clear();
         activeEffects.clear();
+        destroyedTowerIds.clear(); // Reset tower tracking for achievements
 
         // Initialize both players' elixir
         playerElixirManager = new ElixirManager();
@@ -399,6 +404,21 @@ public class GameController {
         // Clean up expired combo visuals
         long currentTime = System.currentTimeMillis();
         activeComboVisuals.removeIf(visual -> !visual.isActive(currentTime));
+
+        // Track crown tower destruction for achievements (before win conditions check)
+        for (Tower tower : arena.getTowers()) {
+            if (tower.isDestroyed() && !tower.isPlayer()) {
+                int towerId = System.identityHashCode(tower);
+                if (!destroyedTowerIds.contains(towerId)) {
+                    destroyedTowerIds.add(towerId);
+                    // Only track crown towers, not king towers
+                    if (!tower.getType().equals("KING")) {
+                        QuestManager.getInstance().onCrownTowerDestroyed();
+                        System.out.println("[ACHIEVEMENT] Crown tower destroyed - tracking progress!");
+                    }
+                }
+            }
+        }
 
         // 6. Check win conditions (after all updates to catch tower destruction)
         checkWinConditions();
