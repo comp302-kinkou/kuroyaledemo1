@@ -29,6 +29,15 @@ public class ElixirManager {
         return false;
     }
 
+    // Adds elixir (e.g., from combo refunds).
+    // Caps at maxElixir.
+    public void addElixir(int amount) {
+        currentElixir += amount;
+        if (currentElixir > maxElixir) {
+            currentElixir = maxElixir;
+        }
+    }
+
     public int getElixir() {
         return (int) currentElixir;
     }

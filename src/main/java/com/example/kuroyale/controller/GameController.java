@@ -6,6 +6,7 @@ import com.example.kuroyale.protocol.Message;
 import com.example.kuroyale.model.challenge.Challenge;
 import com.example.kuroyale.model.challenge.ChallengeManager;
 import com.example.kuroyale.model.persistence.*;
+import com.example.kuroyale.model.combo.*;
 import com.example.kuroyale.model.quest.QuestManager;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +46,9 @@ public class GameController {
 
     private boolean isPaused;
     private String gameResult; // "WIN", "LOSS", "DRAW", or null if game is ongoing
+
+    // Combo System
+    private ComboManager comboManager;
 
     // Persistence Data
     private PlayerProfile playerProfile;
@@ -119,6 +123,9 @@ public class GameController {
         this.playerProfile = new PlayerProfile();
         this.questData = new QuestData();
         this.cardProgressions = new HashMap<>();
+
+        // Initialize Combo Manager
+        this.comboManager = new ComboManager();
 
         // Load Network Config at startup
         com.example.kuroyale.config.NetworkConfig.getInstance();
@@ -272,6 +279,8 @@ public class GameController {
         computerElixirManager = new ElixirManager(); // Reset computer elixir
         playerElixirManager = new ElixirManager(); // Reset player elixir
         computerElixirManager = new ElixirManager(); // Reset computer elixir
+
+        comboManager.reset(); // Reset combo manager for new game
 
         if (!isMultiplayer) {
             computerOpponent = new ComputerOpponent(this); // Reset opponent logic
@@ -654,6 +663,28 @@ public class GameController {
         // Get card progression for level bonuses
         CardProgression progression = getCardProgression(card);
 
+        // Record card play and detect combos
+        long currentTime = System.currentTimeMillis();
+        List<DetectedCombo> detectedCombos = comboManager.recordCardPlay(card, currentTime, isPlayer);
+
+        // Handle combo effects
+        for (DetectedCombo detectedCombo : detectedCombos) {
+            ComboEffect effect = detectedCombo.getEffect();
+            
+            // Special case: Elixir refund for Spell Synergy
+            if (effect.getEffectType() == ComboEffectType.ELIXIR_REFUND) {
+                int refundAmount = (int) effect.getValue();
+                rsc.addElixir(refundAmount);
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
+                                  " - Refunded " + refundAmount + " Elixir!");
+            } else {
+                // Apply effects to units/buildings
+                ComboEffectApplier.applyComboEffect(detectedCombo, activeUnits, activeBuildings, isPlayer);
+                System.out.println("COMBO! " + detectedCombo.getComboType().getDisplayName() + 
+                                  " - Effect applied!");
+            }
+        }
+
         switch (card.getType()) {
             case "TROOP":
                 Unit newUnit = UnitFactory.createUnit(card, x, y, isPlayer, progression);
@@ -773,6 +804,10 @@ public class GameController {
 
     public List<Effect> getActiveEffects() {
         return activeEffects;
+    }
+
+    public ComboManager getComboManager() {
+        return comboManager;
     }
 
     public boolean isGameRunning() {
