@@ -19,6 +19,9 @@ public class QuestData implements Serializable {
     
     // New: Store actual Quest objects for full state persistence
     private List<Quest> quests;
+    
+    // Placeholder for Quest logic
+    private LocalDateTime lastResetTime;
 
     public QuestData() {
         this.dailyQuests = new ArrayList<>();
@@ -27,15 +30,15 @@ public class QuestData implements Serializable {
         this.achievements = new HashMap<>();
         this.achievementProgress = new HashMap<>();
         this.quests = new ArrayList<>();
-    // Placeholder for Quest logic
-    private LocalDateTime lastResetTime;
-
-    public QuestData() {
         this.lastResetTime = LocalDateTime.now();
     }
 
     public LocalDateTime getLastResetTime() {
         return lastResetTime;
+    }
+
+    public void setLastResetTime(LocalDateTime time) {
+        this.lastResetTime = time;
     }
 
     public void setDailyQuests(List<String> dailyQuests) {
@@ -80,7 +83,5 @@ public class QuestData implements Serializable {
 
     public void updateAchievementProgress(String achievementId, int progress) {
         achievementProgress.put(achievementId, progress);
-    public void setLastResetTime(LocalDateTime time) {
-        this.lastResetTime = time;
     }
 }
