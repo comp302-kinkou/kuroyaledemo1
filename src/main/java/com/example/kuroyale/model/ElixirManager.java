@@ -28,6 +28,18 @@ public class ElixirManager {
         }
         return false;
     }
+    
+    /**
+     * Spends elixir and tracks it for quests (player only method).
+     */
+    public boolean spendElixirWithTracking(int amount) {
+        if (spendElixir(amount)) {
+            com.example.kuroyale.model.quest.QuestManager.getInstance()
+                .addQuestProgress(com.example.kuroyale.model.quest.QuestType.SPEND_ELIXIR, amount);
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Spends elixir regardless of current amount. Used for syncing remote player

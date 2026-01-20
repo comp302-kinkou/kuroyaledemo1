@@ -135,7 +135,13 @@ public class QuestManager {
         if (isMultiplayer) {
             statistics.recordMultiplayerMatchWon();
             updateAchievementProgress(AchievementType.NETWORK_WARRIOR, statistics.getTotalMultiplayerMatchesWon());
+            // Track multiplayer win quests
+            addQuestProgress(QuestType.WIN_MULTIPLAYER, 1);
         }
+        
+        // Track for daily quests
+        addQuestProgress(QuestType.WIN_MATCHES, 1);
+        addQuestProgress(QuestType.WIN_STREAK, 1);
     }
     
     /**
@@ -144,6 +150,8 @@ public class QuestManager {
     public void onMatchLost() {
         statistics.recordMatchLost();
         // Reset win streak for UNDEFEATED - it tracks current streak
+        // Reset WIN_STREAK quest progress on loss
+        updateQuestProgress(QuestType.WIN_STREAK, 0);
     }
     
     /**
@@ -152,6 +160,8 @@ public class QuestManager {
     public void onCrownTowerDestroyed() {
         statistics.recordCrownTowerDestroyed();
         updateAchievementProgress(AchievementType.TOWER_HUNTER, statistics.getTotalCrownTowersDestroyed());
+        // Track for daily quests
+        addQuestProgress(QuestType.DESTROY_TOWERS, 1);
     }
     
     /**
@@ -159,6 +169,8 @@ public class QuestManager {
      */
     public void onKingTowerDestroyed() {
         statistics.recordKingTowerDestroyed();
+        // Track for DESTROY_KING quest
+        addQuestProgress(QuestType.DESTROY_KING, 1);
     }
     
     /**
@@ -176,6 +188,9 @@ public class QuestManager {
         if (stars >= 3) {
             updateAchievementProgress(AchievementType.THREE_STAR_HERO, statistics.getTotalThreeStarChallenges());
         }
+        
+        // Track for daily quests
+        addQuestProgress(QuestType.COMPLETE_CHALLENGES, 1);
     }
     
     /**
@@ -196,6 +211,8 @@ public class QuestManager {
     public void onSpellDamageDealt(int damage) {
         statistics.recordSpellDamage(damage);
         updateAchievementProgress(AchievementType.SPELL_MASTER, statistics.getTotalSpellDamageDealt());
+        // Track for daily quests
+        addQuestProgress(QuestType.SPELL_DAMAGE, damage);
     }
     
     /**

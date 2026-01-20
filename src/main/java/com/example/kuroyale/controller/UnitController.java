@@ -35,12 +35,13 @@ public class UnitController {
                 // attack
                 if (unit.canAttack(System.currentTimeMillis())) {
                     unit.attack(System.currentTimeMillis());
+                    int damage = (int) unit.getDamage();
                     if (target instanceof Unit) {
-                        ((Unit) target).takeDamage(unit.getDamage());
+                        ((Unit) target).takeDamage(damage);
                     } else if (target instanceof Tower) {
-                        ((Tower) target).takeDamage(unit.getDamage());
+                        ((Tower) target).takeDamage(damage);
                     } else if (target instanceof Building) {
-                        ((Building) target).takeDamage(unit.getDamage());
+                        ((Building) target).takeDamage(damage);
                     }
                 }
             } else {

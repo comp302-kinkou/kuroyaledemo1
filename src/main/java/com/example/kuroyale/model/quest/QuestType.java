@@ -5,34 +5,50 @@ package com.example.kuroyale.model.quest;
  * Each quest has a description, target value, and gold reward.
  */
 public enum QuestType {
-    // Match-based quests
-    PLAY_MATCHES("Play Matches", "Play %d matches", 3, 50),
-    WIN_MATCHES("Win Matches", "Win %d matches", 2, 75),
-    WIN_STREAK("Win Streak", "Win %d matches in a row", 2, 100),
+    // 1. Win 3 matches
+    WIN_MATCHES("Win Matches", "Win %d matches", 3, 250),
     
-    // Card deployment quests
-    DEPLOY_TROOPS("Deploy Troops", "Deploy %d troop cards", 10, 40),
-    DEPLOY_SPELLS("Cast Spells", "Cast %d spell cards", 5, 40),
-    DEPLOY_BUILDINGS("Place Buildings", "Place %d building cards", 3, 40),
+    // 2. Destroy 5 Crown Towers
+    DESTROY_TOWERS("Destroy Towers", "Destroy %d Crown Towers", 5, 200),
     
-    // Combat quests
-    DESTROY_TOWERS("Destroy Towers", "Destroy %d enemy towers", 3, 60),
-    DEAL_DAMAGE("Deal Damage", "Deal %d total damage", 5000, 50),
-    SPELL_DAMAGE("Spell Damage", "Deal %d spell damage", 1000, 60),
+    // 3. Play 10 spell cards
+    PLAY_SPELLS("Play Spells", "Play %d spell cards", 10, 150),
     
-    // Combo quests
-    TRIGGER_COMBOS("Trigger Combos", "Trigger %d card combos", 3, 80),
+    // 4. Deploy 15 troop cards
+    DEPLOY_TROOPS("Deploy Troops", "Deploy %d troop cards", 15, 175),
     
-    // Challenge quests
-    COMPLETE_CHALLENGE("Complete Challenge", "Complete any challenge", 1, 100),
-    EARN_STARS("Earn Stars", "Earn %d total stars in challenges", 3, 75),
+    // 5. Spend 100 total Elixir
+    SPEND_ELIXIR("Spend Elixir", "Spend %d total Elixir", 100, 100),
     
-    // Resource quests
-    EARN_GOLD("Earn Gold", "Earn %d gold", 200, 50),
-    UPGRADE_CARD("Upgrade Card", "Upgrade any card", 1, 60),
+    // 6. Win a match without losing a Crown Tower
+    PERFECT_WIN("Perfect Win", "Win a match without losing a Crown Tower", 1, 300),
     
-    // Time-based quest
-    DAILY_LOGIN("Daily Login", "Log in and play", 1, 25);
+    // 7. Play 5 building cards
+    PLAY_BUILDINGS("Play Buildings", "Play %d building cards", 5, 150),
+    
+    // 8. Deal 3000 damage with spells
+    SPELL_DAMAGE("Spell Damage", "Deal %d damage with spells", 3000, 200),
+    
+    // 9. Win using only common cards
+    COMMON_ONLY_WIN("Common Only Win", "Win using only common cards", 1, 250),
+    
+    // 10. Complete 2 challenges
+    COMPLETE_CHALLENGES("Complete Challenges", "Complete %d challenges", 2, 300),
+    
+    // 11. Win a network multiplayer match
+    WIN_MULTIPLAYER("Win Multiplayer", "Win a network multiplayer match", 1, 200),
+    
+    // 12. Play 20 cards in a single match
+    PLAY_CARDS_SINGLE_MATCH("Card Master", "Play %d cards in a single match", 20, 150),
+    
+    // 13. Win 2 matches in a row
+    WIN_STREAK("Win Streak", "Win %d matches in a row", 2, 300),
+    
+    // 14. Destroy an enemy King Tower
+    DESTROY_KING("Destroy King", "Destroy an enemy King Tower", 1, 350),
+    
+    // 15. Win a PvP match
+    WIN_PVP("Win PvP", "Win a PvP match", 1, 200);
 
     private final String displayName;
     private final String descriptionFormat;
@@ -51,7 +67,10 @@ public enum QuestType {
     }
 
     public String getDescription() {
-        return String.format(descriptionFormat, targetValue);
+        if (descriptionFormat.contains("%d")) {
+            return String.format(descriptionFormat, targetValue);
+        }
+        return descriptionFormat;
     }
 
     public int getTargetValue() {

@@ -753,7 +753,15 @@ public class GameController {
             cost = activeChallenge.getModifiedCost(card);
         }
 
-        if (!rsc.spendElixir(cost)) {
+        // Use tracking method for player to track SPEND_ELIXIR quest
+        boolean elixirSpent;
+        if (isPlayer) {
+            elixirSpent = rsc.spendElixirWithTracking(cost);
+        } else {
+            elixirSpent = rsc.spendElixir(cost);
+        }
+        
+        if (!elixirSpent) {
             // If remote player (Multiplayer and !isPlayer), we must allow it to sync
             // The remote client is the authority on valid moves for themselves
             if (isMultiplayer && !isPlayer) {
@@ -763,6 +771,12 @@ public class GameController {
             } else {
                 return false;
             }
+        }
+        
+        // Track PLAY_CARDS_SINGLE_MATCH quest for player
+        if (isPlayer) {
+            QuestManager.getInstance().addQuestProgress(
+                com.example.kuroyale.model.quest.QuestType.PLAY_CARDS_SINGLE_MATCH, 1);
         }
 
         // Get card progression for level bonuses
@@ -806,6 +820,8 @@ public class GameController {
                 if (isPlayer) {
                     int troopCount = card.getName().contains("Army") ? 15 : card.getName().contains("Horde") ? 6 : 1;
                     QuestManager.getInstance().onTroopsDeployed(troopCount);
+                    // Track troop deployment for quests (each card counts as 1 deployment)
+                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.DEPLOY_TROOPS, 1);
                 }
 
                 // Console output - different for Local PvP
@@ -822,6 +838,12 @@ public class GameController {
             case "BUILDING":
                 Building newBuilding = BuildingFactory.createBuilding(card, x, y, isPlayer, progression);
                 activeBuildings.add(newBuilding);
+                
+                // Track building deployment for quests
+                if (isPlayer) {
+                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_BUILDINGS, 1);
+                }
+                
                 System.out.println(
                         (isPlayer ? "Player" : "Computer") + " placed Building: " + card.getName() + " (Level " +
                                 (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
@@ -830,6 +852,12 @@ public class GameController {
             case "SPELL":
                 applySpellDamage(card, x, y, progression); // Spell works same way, damage logic handles friend/foe
                                                            // based on target
+                
+                // Track spell deployment for quests
+                if (isPlayer) {
+                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_SPELLS, 1);
+                }
+                
                 System.out.println((isPlayer ? "Player" : "Computer") + " cast Spell: " + card.getName() + " (Level " +
                         (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
@@ -1160,6 +1188,24 @@ public class GameController {
 
         if ("WIN".equals(result)) {
             qm.onMatchWon(isMultiplayer);
+            
+            // Track WIN_PVP for local PvP wins
+            if (isLocalPvP) {
+                qm.addQuestProgress(com.example.kuroyale.model.quest.QuestType.WIN_PVP, 1);
+            }
+            
+            // Track PERFECT_WIN if player didn't lose any crown towers
+            boolean lostAnyCrownTower = false;
+            for (Tower tower : arena.getTowers()) {
+                if (tower.isPlayer() && tower.isDestroyed() && !tower.getType().equals("KING")) {
+                    lostAnyCrownTower = true;
+                    break;
+                }
+            }
+            if (!lostAnyCrownTower) {
+                qm.addQuestProgress(com.example.kuroyale.model.quest.QuestType.PERFECT_WIN, 1);
+            }
+            
             if (playerProfile != null) {
                 playerProfile.incrementWins();
                 playerProfile.addGold(150); // Victory Gold
