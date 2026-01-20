@@ -6,41 +6,16 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ArenaTest {
 
     @Test
-    public void testRandomizeBridgesDeterministic() {
-        Arena arena1 = new Arena();
-        Arena arena2 = new Arena();
-        long seed = 12345L;
+    public void testFixedBridges() {
+        Arena arena = new Arena();
+        arena.setupFixedBridges();
 
-        arena1.randomizeBridges(seed);
-        arena2.randomizeBridges(seed);
+        assertEquals(2, arena.getBridges().size(), "Should always have 2 bridges");
 
-        assertEquals(arena1.getBridges().size(), arena2.getBridges().size(), "Bridge count should be identical");
+        Arena.Bridge b1 = arena.getBridges().get(0);
+        Arena.Bridge b2 = arena.getBridges().get(1);
 
-        for (int i = 0; i < arena1.getBridges().size(); i++) {
-            assertEquals(arena1.getBridges().get(i).x, arena2.getBridges().get(i).x, 0.001,
-                    "Bridge " + i + " position should be identical");
-        }
-    }
-
-    @Test
-    public void testRandomizeBridgesDifferentSeeds() {
-        Arena arena1 = new Arena();
-        Arena arena2 = new Arena();
-
-        arena1.randomizeBridges(11111L);
-        arena2.randomizeBridges(99999L); // High chance to be different
-
-        // Note: small chance they are same if RNG aligns, but unlikely for double
-        // positions
-        if (arena1.getBridges().size() == arena2.getBridges().size()) {
-            boolean allSame = true;
-            for (int i = 0; i < arena1.getBridges().size(); i++) {
-                if (Math.abs(arena1.getBridges().get(i).x - arena2.getBridges().get(i).x) > 0.001) {
-                    allSame = false;
-                    break;
-                }
-            }
-            assertFalse(allSame, "Different seeds should likely produce different bridges");
-        }
+        assertEquals(5.0, b1.x, 0.001);
+        assertEquals(11.0, b2.x, 0.001);
     }
 }

@@ -829,13 +829,33 @@ public class GameController {
     }
 
     private long multiplayerSeed;
+    private java.util.List<Tower> opponentTowers = new java.util.ArrayList<>();
 
     public void setMultiplayerSeed(long seed) {
         this.multiplayerSeed = seed;
         // Apply synchronized bridge layout
         if (arena != null) {
-            arena.randomizeBridges(seed);
-            System.out.println("Applied synchronized bridge seed: " + seed);
+            arena.setupFixedBridges();
+            System.out.println("Applied fixed bridges (seed ignored)");
+        }
+    }
+
+    public void setOpponentTowers(String layoutData) {
+        opponentTowers.clear();
+        String[] towerStrings = layoutData.split(";");
+        for (String ts : towerStrings) {
+            if (ts.isEmpty())
+                continue;
+            try {
+                // Format: Type,x,y
+                String[] parts = ts.split(",");
+                String type = parts[0];
+                double x = Double.parseDouble(parts[1]);
+                double y = Double.parseDouble(parts[2]);
+                opponentTowers.add(new Tower(type, x, y, false));
+            } catch (Exception e) {
+                System.err.println("Error parsing opponent tower: " + ts);
+            }
         }
     }
 
@@ -846,6 +866,62 @@ public class GameController {
     public void startMultiplayerGame() {
         this.isMultiplayer = true;
         this.isPaused = false;
+
+        // Setup Arena for Multiplayer
+        if (arena != null) {
+            // 1. Bridges
+            arena.setupFixedBridges();
+
+            // 2. Towers
+            // Capture local towers (Player) before clearing
+            java.util.List<Tower> localTowers = new java.util.ArrayList<>();
+            for (Tower t : arena.getTowers()) {
+                if (t.isPlayer()) {
+                    localTowers.add(t);
+                }
+            }
+
+            arena.clearTowers();
+
+            // Add Local Towers
+            for (Tower t : localTowers) {
+                arena.addTower(t);
+            }
+
+            // Add Opponent Towers (Mirrored)
+            for (Tower opRequest : opponentTowers) {
+                // Opponent sent their setup as if they were bottom (Player).
+                // We must mirror them to Top.
+                // wait, if they sent x,y relative to them (Bottom), we mirror to Top.
+                // My logic in setOpponentTowers just parsed x,y.
+                // Mirror now:
+                double mirrorX = opRequest.getX(); // X is preserved usually? No, mirror X too for perspective?
+                // Standard Clash Royale: Enemy left is my right?
+                // If enemy puts King at 9,30 (Bottom Center).
+                // I see it at 9, 2 (Top Center).
+                // So X is same (9), Y is mirrored (Height - Y).
+                // Wait, if he puts Princess at Left (3.5), it should appear on my Right (Top
+                // Right)?
+                // Or does it appear on my Left (Top Left)?
+                // Usually lane mirroring. Left lane fights Right lane?
+                // Visual mirror:
+                // His 3.5 (Left) -> My 14.5 (Right) on Top?
+                // Let's stick to X Mirroring for true PvP perspective.
+
+                double mirrorXCoord = arena.getWidth() - opRequest.getX();
+                double mirrorYCoord = arena.getHeight() - opRequest.getY();
+
+                arena.addTower(new Tower(opRequest.getType(), mirrorXCoord, mirrorYCoord, false));
+            }
+
+            // If no opponent towers (e.g. error/sync fail), add defaults?
+            if (opponentTowers.isEmpty()) {
+                System.out.println("No opponent towers received! Adding defaults.");
+                arena.addTower(new Tower("KING", 9.0, 2.0, false));
+                arena.addTower(new Tower("PRINCESS", 3.5, 5.5, false));
+                arena.addTower(new Tower("PRINCESS", 14.5, 5.5, false));
+            }
+        }
 
         // Setup listener
         networkManager.setMessageHandler(this::handleIncomingMessage);

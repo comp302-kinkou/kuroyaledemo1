@@ -82,42 +82,12 @@ public class Arena {
         return true;
     }
 
-    public void randomizeBridges(long seed) {
+    public void setupFixedBridges() {
         bridges.clear();
-        java.util.Random random = new java.util.Random(seed);
-
-        // Random number of bridges: 1 to 3
-        int bridgeCount = 1 + random.nextInt(3);
-
-        // Define valid range for bridge placement (0 to width - 2.0)
-        double minX = 1.0;
-        double maxX = width - 3.0; // Ensure some padding
-
-        for (int i = 0; i < bridgeCount; i++) {
-            // Try to place a bridge
-            for (int attempt = 0; attempt < 10; attempt++) {
-                double x = minX + (maxX - minX) * random.nextDouble();
-
-                // Check overlap with existing bridges (simple check)
-                boolean overlaps = false;
-                for (Bridge b : bridges) {
-                    if (Math.abs(b.x - x) < 3.0) { // Keep them at least 3 units apart
-                        overlaps = true;
-                        break;
-                    }
-                }
-
-                if (!overlaps) {
-                    addBridge("Bridge " + (i + 1), x);
-                    break;
-                }
-            }
-        }
-
-        // Fallback: Ensure at least one bridge if random placement failed repeatedly
-        if (bridges.isEmpty()) {
-            addBridge("Bridge 1", width / 2.0 - 1.0); // Center
-        }
+        // Fixed Bridge 1 at ~1/3 (width=18, so x=5.0 is safe)
+        addBridge("Bridge 1", 5.0);
+        // Fixed Bridge 2 at ~2/3 (width=18, so x=11.0 is safe)
+        addBridge("Bridge 2", 11.0);
     }
 
     public List<Tower> getTowers() {

@@ -52,7 +52,7 @@ public class LobbyView {
         btnDeck.setOnAction(e -> app.showDeckBuilder());
 
         Button btnArena = new Button("Design Arena");
-        btnArena.setOnAction(e -> app.showArenaDesigner());
+        btnArena.setOnAction(e -> app.showArenaDesigner(true));
 
         prepBox.getChildren().addAll(btnDeck, btnArena);
 
@@ -174,13 +174,33 @@ public class LobbyView {
     }
 
     private void toggleReady() {
-        if (!controller.isGameReady()) {
+        if (!controller.isDeckReady()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Not Ready");
-            alert.setContentText("Complete Deck and Arena before Ready!");
+            alert.setContentText("You must build a valid Deck before playing!");
             alert.showAndWait();
             return;
         }
+
+        if (!controller.isArenaReady()) {
+            if (controller.getArena().getTowers().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Not Ready");
+                alert.setContentText("You must design your Arena (place Towers)!");
+                alert.showAndWait();
+                return;
+            }
+        }
+
+        // Serialize and Send Tower Layout
+        StringBuilder sb = new StringBuilder();
+        for (com.example.kuroyale.model.Tower t : controller.getArena().getTowers()) {
+            if (t.isPlayer()) { // Only send my towers
+                sb.append(t.getType()).append(",").append(t.getX()).append(",").append(t.getY()).append(";");
+            }
+        }
+        networkManager.sendMessage(
+                new Message(Message.MessageType.TOWER_LAYOUT, networkManager.getLocalPlayerId(), sb.toString()));
 
         isLocalReady = true;
         readyButton.setDisable(true); // Lock in
@@ -238,6 +258,10 @@ public class LobbyView {
                 } catch (Exception e) {
                     System.err.println("Failed to parse bridge seed: " + msg.getData());
                 }
+                break;
+            case TOWER_LAYOUT:
+                controller.setOpponentTowers((String) msg.getData());
+                System.out.println("Received Opponent Tower Layout.");
                 break;
             case PLAYER_READY:
                 isRemoteReady = true;

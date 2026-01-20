@@ -61,11 +61,8 @@ public class MainMenuView {
 
         Button btnMultiplayer = new Button("Multiplayer");
         btnMultiplayer.setOnAction(e -> {
-            if (GameController.getInstance().isGameReady()) {
-                mainApp.showLobby();
-            } else {
-                showAlert("Not Ready", "Please build a deck and design the arena before entering Multiplayer!");
-            }
+            // Allow entry to lobby even if not ready (building deck/arena allowed in lobby)
+            mainApp.showLobby();
         });
         btnMultiplayer.setMaxWidth(200);
         btnMultiplayer.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");

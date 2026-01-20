@@ -17,6 +17,7 @@ public class Message implements Serializable {
         ELIXIR_UPDATE,
         GAME_OVER,
         DISCONNECT,
+        TOWER_LAYOUT,
         PING // For connection quality
     }
 
