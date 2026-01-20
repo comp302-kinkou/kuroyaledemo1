@@ -21,8 +21,6 @@ public class LobbyView {
     private Label statusLabel;
     private Button startButton;
     private Button readyButton;
-    private boolean isLocalReady = false;
-    private boolean isRemoteReady = false;
 
     // Persist host/join state across view reloads (if backing out to deck builder)
     // This could be moved to a robust storage, but static here is a simple hack for
@@ -156,9 +154,11 @@ public class LobbyView {
 
         // Initial State check
         if (networkManager.isConnected() || networkManager.isHost()) {
-            readyButton.setDisable(false);
-            statusLabel.setText("Connected. Please prepare deck/arena and click Ready.");
-            // If we are host, we might have seed already. If client, waiting for seed.
+            // But don't enable Ready until Join Accepted/Requested (Peer check)
+            if (controller.isLocalReady()) {
+                applyLocalReadyUI();
+            }
+            checkStartCondition();
         }
 
         return root;
@@ -166,11 +166,11 @@ public class LobbyView {
 
     private void refreshUIState(VBox connectionPanel, VBox root) {
         connectionPanel.getChildren().clear();
-        Label connected = new Label("Connected");
-        connected.setStyle("-fx-text-fill: lightgreen; -fx-font-size: 16px;");
+        Label connected = new Label("Waiting for Opponent...");
+        connected.setStyle("-fx-text-fill: #f39c12; -fx-font-size: 16px;");
         connectionPanel.getChildren().add(connected);
 
-        readyButton.setDisable(false);
+        // Keep readyButton disabled until peer arrives
     }
 
     private void toggleReady() {
@@ -202,25 +202,32 @@ public class LobbyView {
         networkManager.sendMessage(
                 new Message(Message.MessageType.TOWER_LAYOUT, networkManager.getLocalPlayerId(), sb.toString()));
 
-        isLocalReady = true;
-        readyButton.setDisable(true); // Lock in
-        readyButton.setText("Ready!");
-        readyButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+        controller.setLocalReady(true);
+        applyLocalReadyUI();
 
         networkManager
                 .sendMessage(new Message(Message.MessageType.PLAYER_READY, networkManager.getLocalPlayerId(), null));
         checkStartCondition();
     }
 
+    private void applyLocalReadyUI() {
+        readyButton.setDisable(true); // Lock in
+        readyButton.setText("Ready!");
+        readyButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+    }
+
     private void checkStartCondition() {
-        if (isLocalReady && isRemoteReady) {
+        boolean local = controller.isLocalReady();
+        boolean remote = controller.isRemoteReady();
+        if (local && remote) {
             statusLabel.setText("Both Players Ready! Waiting for Host...");
             if (networkManager.isHost()) {
                 startButton.setDisable(false);
             }
         } else {
             statusLabel.setText(
-                    "Waiting for players to be Ready... (Local: " + isLocalReady + ", Remote: " + isRemoteReady + ")");
+                    "Waiting for players to be Ready... (You: " + (local ? "Ready" : "Not Ready") + ", Opponent: "
+                            + (remote ? "Ready" : "Not Ready") + ")");
         }
     }
 
@@ -240,6 +247,7 @@ public class LobbyView {
         switch (msg.getType()) {
             case JOIN_REQUEST:
                 statusLabel.setText("Client Connected!");
+                readyButton.setDisable(false);
                 if (networkManager.isHost()) {
                     networkManager.sendMessage(new Message(Message.MessageType.JOIN_ACCEPT, 1, "Player 1"));
                     // Send Seed
@@ -249,6 +257,7 @@ public class LobbyView {
                 break;
             case JOIN_ACCEPT:
                 statusLabel.setText("Joined! Waiting for seed...");
+                readyButton.setDisable(false);
                 break;
             case BRIDGE_SEED:
                 try {
@@ -264,7 +273,7 @@ public class LobbyView {
                 System.out.println("Received Opponent Tower Layout.");
                 break;
             case PLAYER_READY:
-                isRemoteReady = true;
+                controller.setRemoteReady(true);
                 checkStartCondition();
                 break;
             case START_MATCH:
@@ -273,7 +282,7 @@ public class LobbyView {
                 break;
             case DISCONNECT:
                 statusLabel.setText("Opponent Disconnected");
-                isRemoteReady = false;
+                controller.setRemoteReady(false);
                 startButton.setDisable(true);
                 break;
             default:

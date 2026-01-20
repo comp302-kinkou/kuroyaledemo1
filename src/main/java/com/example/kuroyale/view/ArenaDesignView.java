@@ -66,9 +66,16 @@ public class ArenaDesignView {
             }
         }
 
-        // Load existing bridges from arena
-        for (Arena.Bridge b : arena.getBridges()) {
-            tempBridges.add(new Arena.Bridge(b.name, b.x, b.width));
+        // Load bridges
+        if (isMultiplayerMode) {
+            // Requirement: 2 Bridges already present in default place
+            tempBridges.add(new Arena.Bridge("Bridge 1", 5.0, 2.0));
+            tempBridges.add(new Arena.Bridge("Bridge 2", 11.0, 2.0));
+        } else {
+            // Load existing bridges from arena (Singleplayer)
+            for (Arena.Bridge b : arena.getBridges()) {
+                tempBridges.add(new Arena.Bridge(b.name, b.x, b.width));
+            }
         }
     }
 

@@ -830,6 +830,8 @@ public class GameController {
 
     private long multiplayerSeed;
     private java.util.List<Tower> opponentTowers = new java.util.ArrayList<>();
+    private boolean isLocalReady = false;
+    private boolean isRemoteReady = false;
 
     public void setMultiplayerSeed(long seed) {
         this.multiplayerSeed = seed;
@@ -838,6 +840,28 @@ public class GameController {
             arena.setupFixedBridges();
             System.out.println("Applied fixed bridges (seed ignored)");
         }
+    }
+
+    public void resetMultiplayerStates() {
+        isLocalReady = false;
+        isRemoteReady = false;
+        opponentTowers.clear();
+    }
+
+    public boolean isLocalReady() {
+        return isLocalReady;
+    }
+
+    public void setLocalReady(boolean ready) {
+        this.isLocalReady = ready;
+    }
+
+    public boolean isRemoteReady() {
+        return isRemoteReady;
+    }
+
+    public void setRemoteReady(boolean ready) {
+        this.isRemoteReady = ready;
     }
 
     public void setOpponentTowers(String layoutData) {
