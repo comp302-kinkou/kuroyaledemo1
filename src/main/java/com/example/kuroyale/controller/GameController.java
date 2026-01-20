@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GameController {
 
@@ -49,6 +50,7 @@ public class GameController {
 
     // Combo System
     private ComboManager comboManager;
+    private List<ComboVisualEffect> activeComboVisuals;
 
     // Persistence Data
     private PlayerProfile playerProfile;
@@ -126,6 +128,7 @@ public class GameController {
 
         // Initialize Combo Manager
         this.comboManager = new ComboManager();
+        this.activeComboVisuals = new CopyOnWriteArrayList<>();
 
         // Load Network Config at startup
         com.example.kuroyale.config.NetworkConfig.getInstance();
@@ -281,6 +284,7 @@ public class GameController {
         computerElixirManager = new ElixirManager(); // Reset computer elixir
 
         comboManager.reset(); // Reset combo manager for new game
+        activeComboVisuals.clear(); // Clear combo visuals
 
         if (!isMultiplayer) {
             computerOpponent = new ComputerOpponent(this); // Reset opponent logic
@@ -389,6 +393,10 @@ public class GameController {
             effect.update(deltaTime);
         }
         activeEffects.removeIf(Effect::isExpired);
+
+        // Clean up expired combo visuals
+        long currentTime = System.currentTimeMillis();
+        activeComboVisuals.removeIf(visual -> !visual.isActive(currentTime));
 
         // 6. Check win conditions (after all updates to catch tower destruction)
         checkWinConditions();
@@ -671,6 +679,15 @@ public class GameController {
         for (DetectedCombo detectedCombo : detectedCombos) {
             ComboEffect effect = detectedCombo.getEffect();
             
+            // Create visual effect for the combo
+            ComboVisualEffect visual = new ComboVisualEffect(
+                x, y, 
+                detectedCombo.getComboType().getDisplayName(),
+                detectedCombo.getComboType(),
+                currentTime
+            );
+            activeComboVisuals.add(visual);
+            
             // Special case: Elixir refund for Spell Synergy
             if (effect.getEffectType() == ComboEffectType.ELIXIR_REFUND) {
                 int refundAmount = (int) effect.getValue();
@@ -808,6 +825,10 @@ public class GameController {
 
     public ComboManager getComboManager() {
         return comboManager;
+    }
+
+    public List<ComboVisualEffect> getActiveComboVisuals() {
+        return activeComboVisuals;
     }
 
     public boolean isGameRunning() {

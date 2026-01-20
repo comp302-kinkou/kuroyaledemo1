@@ -47,6 +47,7 @@ public class GameView {
     private Button btnSpeed;
     private Label playerScoreLabel;
     private Label enemyScoreLabel;
+    private Label comboCounterLabel;
 
     private static final double TILE_SIZE = 20.0; // Scale factor
 
@@ -109,15 +110,18 @@ public class GameView {
         messageLabel = new Label("Select a card and click on arena to spawn!");
         timerLabel = new Label("Time: 3:00");
         timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+        
+        comboCounterLabel = new Label("Combos: 0");
+        comboCounterLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: gold;");
 
         // Spacer
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
         // Layout: [Player Score] [Buttons...] [Turn Indicator] [Message] [Spacer]
-        // [Timer] [Enemy Score]
+        // [Combo Counter] [Timer] [Enemy Score]
         topBar.getChildren().addAll(playerScoreLabel, btnExit, btnPause, btnSpeed, turnIndicatorLabel, messageLabel,
-                spacer, timerLabel,
+                spacer, comboCounterLabel, timerLabel,
                 enemyScoreLabel);
         topBar.setStyle("-fx-background-color: #222;"); // Darker top bar
 
@@ -317,6 +321,9 @@ public class GameView {
             playerScoreLabel.setText("Player: " + playerCrowns);
             enemyScoreLabel.setText("Enemy: " + enemyCrowns);
         }
+
+        // Update combo counter
+        comboCounterLabel.setText("Combos: " + controller.getComboManager().getUniqueComboCount());
 
         // Check if we need to refresh hand (e.g. after playing a card)
         // For simplicity, we can refresh every frame or check a flag.
@@ -607,6 +614,38 @@ public class GameView {
             gc.setFill(Color.rgb(255, 255, 0, alpha * 0.7));
             double r = effect.getRadius() * TILE_SIZE;
             gc.fillOval(effect.getX() * TILE_SIZE - r, effect.getY() * TILE_SIZE - r, r * 2, r * 2);
+        }
+
+        // Draw Combo Visuals
+        long currentTime = System.currentTimeMillis();
+        for (com.example.kuroyale.model.combo.ComboVisualEffect visual : controller.getActiveComboVisuals()) {
+            double x = visual.getX() * TILE_SIZE;
+            double y = visual.getY() * TILE_SIZE;
+            double scale = visual.getScale(currentTime);
+            double alpha = visual.getAlpha(currentTime);
+            
+            // Draw "COMBO!" text with animation
+            gc.save();
+            gc.setGlobalAlpha(alpha);
+            gc.setFill(Color.GOLD);
+            gc.setStroke(Color.ORANGE);
+            gc.setLineWidth(2);
+            
+            // Scale the text
+            double fontSize = 20 * scale;
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize));
+            
+            // Draw "COMBO!" text
+            String comboText = "COMBO!";
+            gc.fillText(comboText, x, y - 20);
+            gc.strokeText(comboText, x, y - 20);
+            
+            // Draw combo name below
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.NORMAL, fontSize * 0.7));
+            gc.setFill(Color.WHITE);
+            gc.fillText(visual.getComboName(), x, y + 5);
+            
+            gc.restore();
         }
     }
 
