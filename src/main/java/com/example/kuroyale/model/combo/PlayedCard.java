@@ -1,4 +1,6 @@
-package com.example.kuroyale.model;
+package com.example.kuroyale.model.combo;
+
+import com.example.kuroyale.model.Card;
 
 // Represents a card that was played, along with its timestamp.
 // Used for tracking card plays to detect combos.
