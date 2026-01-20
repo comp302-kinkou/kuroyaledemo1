@@ -30,6 +30,14 @@ public class GameController {
     private boolean isMultiplayer = false;
     private NetworkManager networkManager;
 
+    // Local PvP Mode
+    private boolean isLocalPvP = false;
+    private Deck localPvPPlayer1Deck = new Deck();
+    private Deck localPvPPlayer2Deck = new Deck();
+    private ElixirManager player2ElixirManager;
+    private int currentPlayerTurn = 1; // 1 or 2
+    private boolean isPlayer2DeckSaved = false;
+
     private double gameTime;
 
     private boolean isDeckSaved = false;
@@ -98,6 +106,10 @@ public class GameController {
         this.isGameRunning = false;
         this.unitController = new UnitController(this, this.arena);
         this.gameTime = 180.0; // 3 minutes
+
+        // Initialize local PvP components
+        this.localPvPPlayer2Deck = new Deck();
+        this.player2ElixirManager = new ElixirManager();
         this.isPaused = false;
         this.gameResult = null;
         this.timeScale = 1.0;
@@ -173,6 +185,9 @@ public class GameController {
     }
 
     public boolean isGameReady() {
+        if (isLocalPvP) {
+            return isDeckSaved && isPlayer2DeckSaved && isArenaSaved;
+        }
         return isDeckSaved && isArenaSaved;
     }
 
@@ -182,6 +197,69 @@ public class GameController {
 
     public boolean isArenaReady() {
         return isArenaSaved;
+    }
+
+    // Local PvP Methods
+    public void setPlayer2Deck(Deck newDeck) {
+        this.localPvPPlayer2Deck = newDeck;
+        this.isPlayer2DeckSaved = true;
+        this.localPvPPlayer2Deck.initializeGameDeck();
+    }
+
+    // Set BOTH PvP decks (completely separate from normal mode deck!)
+    public void setLocalPvPDecks(Deck player1PvPDeck, Deck player2PvPDeck) {
+        // Store in SEPARATE fields - doesn't touch this.deck at all!
+        this.localPvPPlayer1Deck = player1PvPDeck;
+        this.localPvPPlayer2Deck = player2PvPDeck;
+        this.isPlayer2DeckSaved = true;
+        this.localPvPPlayer1Deck.initializeGameDeck();
+        this.localPvPPlayer2Deck.initializeGameDeck();
+        System.out.println("Local PvP decks set (separate from normal mode)");
+    }
+
+    public Deck getLocalPvPPlayer1Deck() {
+        return localPvPPlayer1Deck;
+    }
+
+    public Deck getPlayer2Deck() {
+        return localPvPPlayer2Deck;
+    }
+
+    public ElixirManager getPlayer2ElixirManager() {
+        return player2ElixirManager;
+    }
+
+    public boolean isLocalPvP() {
+        return isLocalPvP;
+    }
+
+    public int getCurrentPlayerTurn() {
+        return currentPlayerTurn;
+    }
+
+    public void switchTurn() {
+        currentPlayerTurn = (currentPlayerTurn == 1) ? 2 : 1;
+        System.out.println("Turn switched to Player " + currentPlayerTurn);
+    }
+
+    public void resetGameMode() {
+        isLocalPvP = false;
+        isPlayer2DeckSaved = false;
+        currentPlayerTurn = 1;
+
+        // Reset ONLY PvP decks - normal deck (this.deck) is untouched!
+        localPvPPlayer1Deck = new Deck();
+        localPvPPlayer2Deck = new Deck();
+        player2ElixirManager = new ElixirManager();
+
+        // IMPORTANT: Clear all game state
+        activeUnits.clear();
+        activeBuildings.clear();
+        activeEffects.clear();
+        isGameRunning = false;
+        gameResult = null;
+
+        System.out.println("Game mode reset to normal.");
     }
 
     public void startGame() {
@@ -213,6 +291,40 @@ public class GameController {
         System.out.println("Game Started!");
     }
 
+    public void startLocalPvPGame() {
+        isLocalPvP = true;
+        isGameRunning = true;
+        isPaused = false;
+        gameResult = null;
+        activeUnits.clear();
+        activeBuildings.clear();
+        activeEffects.clear();
+
+        // Initialize both players' elixir
+        playerElixirManager = new ElixirManager();
+        player2ElixirManager = new ElixirManager();
+
+        // No computer opponent in local PvP
+        computerOpponent = null;
+
+        // Reset turn to Player 1
+        currentPlayerTurn = 1;
+
+        timeScale = 1.0;
+
+        // Setup arena if needed
+        if (arena.getTowers().isEmpty()) {
+            arena.setupDefaultTowers();
+        }
+
+        // Initialize both decks
+        deck.initializeGameDeck();
+        localPvPPlayer2Deck.initializeGameDeck();
+
+        gameTime = 180.0;
+        System.out.println("Local PvP Game Started! Player 1's turn.");
+    }
+
     public void togglePause() {
         isPaused = !isPaused;
         System.out.println("Game " + (isPaused ? "Paused" : "Resumed"));
@@ -233,10 +345,16 @@ public class GameController {
 
         // 1. Update Elixir
         playerElixirManager.update(scaledDeltaTime);
-        computerElixirManager.update(scaledDeltaTime);
+        if (isLocalPvP) {
+            player2ElixirManager.update(scaledDeltaTime);
+        } else {
+            computerElixirManager.update(scaledDeltaTime);
+        }
 
-        // Update Computer Opponent
-        computerOpponent.update(scaledDeltaTime);
+        // Update Computer Opponent (only in non-PvP modes)
+        if (computerOpponent != null && !isLocalPvP) {
+            computerOpponent.update(scaledDeltaTime);
+        }
 
         // 2. Update Units (Movement and Attack)
         for (Unit unit : activeUnits) {
@@ -479,12 +597,12 @@ public class GameController {
             int previousLevel = progression.getLevel();
             progression.upgrade();
             progression.addGoldSpent(cost);
-            
+
             // Track legendary card level 3 upgrade for achievements
             if (progression.getRarity() == CardRarity.LEGENDARY && progression.getLevel() == 3 && previousLevel == 2) {
                 QuestManager.getInstance().onLegendaryCardUpgradedToLevel3();
             }
-            
+
             saveGame(); // Auto-save after upgrade
             return true;
         }
@@ -514,7 +632,15 @@ public class GameController {
                     new Message(Message.MessageType.CARD_PLAYED, networkManager.getLocalPlayerId(), payload));
         }
 
-        ElixirManager rsc = isPlayer ? playerElixirManager : computerElixirManager;
+        // Select correct elixir manager
+        ElixirManager rsc;
+        if (isLocalPvP) {
+            // In local PvP: isPlayer true = Player 1, false = Player 2
+            rsc = isPlayer ? playerElixirManager : player2ElixirManager;
+        } else {
+            // In normal/network: isPlayer true = player, false = computer
+            rsc = isPlayer ? playerElixirManager : computerElixirManager;
+        }
 
         int cost = card.getElixirCost();
         if (activeChallenge != null) {
@@ -532,15 +658,23 @@ public class GameController {
             case "TROOP":
                 Unit newUnit = UnitFactory.createUnit(card, x, y, isPlayer, progression);
                 activeUnits.add(newUnit);
-                // Track troop deployment for achievements (count based on card, e.g. Skeleton Army = many)
+
+                // Track troop deployment for achievements (count based on card, e.g. Skeleton
+                // Army = many)
                 if (isPlayer) {
-                    int troopCount = card.getName().contains("Army") ? 15 : 
-                                     card.getName().contains("Horde") ? 6 : 1;
+                    int troopCount = card.getName().contains("Army") ? 15 : card.getName().contains("Horde") ? 6 : 1;
                     QuestManager.getInstance().onTroopsDeployed(troopCount);
                 }
-                System.out
-                        .println((isPlayer ? "Player" : "Computer") + " spawned Troop: " + card.getName() + " (Level " +
-                                (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
+
+                // Console output - different for Local PvP
+                String playerLabel;
+                if (isLocalPvP) {
+                    playerLabel = isPlayer ? "Player 1" : "Player 2";
+                } else {
+                    playerLabel = isPlayer ? "Player" : "Computer";
+                }
+                System.out.println(playerLabel + " spawned Troop: " + card.getName() + " (Level " +
+                        (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
 
             case "BUILDING":
@@ -741,7 +875,7 @@ public class GameController {
         // Track achievement progress
         QuestManager qm = QuestManager.getInstance();
         qm.onMatchPlayed();
-        
+
         if ("WIN".equals(result)) {
             qm.onMatchWon(isMultiplayer);
         } else if ("LOSS".equals(result)) {

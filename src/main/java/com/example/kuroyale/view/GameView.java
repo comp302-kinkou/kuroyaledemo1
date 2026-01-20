@@ -31,13 +31,18 @@ public class GameView {
 
     private Card selectedCard = null;
     private int selectedHandIndex = -1;
+    private int selectedByPlayer = 0; // Track which player selected the card (1 or 2)
 
     // UI Elements
     private Label elixirLabel;
     private ProgressBar elixirBar;
+    private Label player2ElixirLabel;
+    private ProgressBar player2ElixirBar;
     private HBox handBox;
+    private HBox player2HandBox;
     private Label messageLabel;
     private Label timerLabel;
+    private Label turnIndicatorLabel;
     private Button btnPause;
     private Button btnSpeed;
     private Label playerScoreLabel;
@@ -61,6 +66,7 @@ public class GameView {
         Button btnExit = new Button("Exit Game");
         btnExit.setOnAction(e -> {
             stopGame();
+            controller.resetGameMode(); // Reset PvP state when exiting
             mainApp.showMainMenu();
         });
 
@@ -75,12 +81,30 @@ public class GameView {
             toggleSpeed();
         });
 
-        playerScoreLabel = new Label("Player: 0");
-        playerScoreLabel
-                .setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: cyan; -fx-padding: 0 10 0 0;");
+        // Score labels - different for Local PvP
+        if (controller.isLocalPvP()) {
+            playerScoreLabel = new Label("Player 1: 0");
+            playerScoreLabel.setStyle(
+                    "-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: cyan; -fx-padding: 0 10 0 0;");
 
-        enemyScoreLabel = new Label("Enemy: 0");
-        enemyScoreLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: orange;");
+            enemyScoreLabel = new Label("Player 2: 0");
+            enemyScoreLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: orange;");
+        } else {
+            playerScoreLabel = new Label("Player: 0");
+            playerScoreLabel.setStyle(
+                    "-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: cyan; -fx-padding: 0 10 0 0;");
+
+            enemyScoreLabel = new Label("Enemy: 0");
+            enemyScoreLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: orange;");
+        }
+
+        // Turn indicator for local PvP
+        turnIndicatorLabel = new Label("");
+        turnIndicatorLabel.setStyle(
+                "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #f1c40f; -fx-padding: 0 10 0 10;");
+        if (controller.isLocalPvP()) {
+            turnIndicatorLabel.setText("Player " + controller.getCurrentPlayerTurn() + "'s Turn");
+        }
 
         messageLabel = new Label("Select a card and click on arena to spawn!");
         timerLabel = new Label("Time: 3:00");
@@ -90,14 +114,39 @@ public class GameView {
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
         javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
-        // Layout: [Player Score] [Buttons...] [Message] [Spacer] [Timer] [Enemy Score]
-        topBar.getChildren().addAll(playerScoreLabel, btnExit, btnPause, btnSpeed, messageLabel, spacer, timerLabel,
+        // Layout: [Player Score] [Buttons...] [Turn Indicator] [Message] [Spacer]
+        // [Timer] [Enemy Score]
+        topBar.getChildren().addAll(playerScoreLabel, btnExit, btnPause, btnSpeed, turnIndicatorLabel, messageLabel,
+                spacer, timerLabel,
                 enemyScoreLabel);
         topBar.setStyle("-fx-background-color: #222;"); // Darker top bar
 
-        // Challenge Overlay / Info
+        // Challenge Overlay / Info OR Player 2 UI for Local PvP
         VBox topContainer = new VBox(topBar);
-        if (controller.getActiveChallenge() != null) {
+
+        if (controller.isLocalPvP()) {
+            // Player 2 UI at the top (upside down gameplay)
+            VBox player2UI = new VBox(10);
+            player2UI.setPadding(new Insets(10));
+            player2UI.setStyle("-fx-background-color: #f0e68c;"); // Light yellow for Player 2
+
+            // Player 2 Elixir
+            HBox player2ElixirBox = new HBox(10);
+            player2ElixirBox.setAlignment(Pos.CENTER);
+            player2ElixirLabel = new Label("Player 2 Elixir: 5");
+            player2ElixirLabel.setStyle("-fx-font-weight: bold;");
+            player2ElixirBar = new ProgressBar(0.5);
+            player2ElixirBar.setPrefWidth(200);
+            player2ElixirBox.getChildren().addAll(player2ElixirLabel, player2ElixirBar);
+
+            // Player 2 Hand
+            player2HandBox = new HBox(10);
+            player2HandBox.setAlignment(Pos.CENTER);
+            player2HandBox.setPrefHeight(100);
+
+            player2UI.getChildren().addAll(player2ElixirBox, player2HandBox);
+            topContainer.getChildren().add(player2UI);
+        } else if (controller.getActiveChallenge() != null) {
             Challenge c = controller.getActiveChallenge();
             Label challengeLabel = new Label("CHALLENGE: " + c.getName() + " - " + c.getDescription().split("\n")[0]);
             challengeLabel.setStyle(
@@ -129,20 +178,34 @@ public class GameView {
         bottomBox.setPadding(new Insets(10));
         bottomBox.setStyle("-fx-background-color: #ddd;");
 
-        // Elixir
-        HBox elixirBox = new HBox(10);
-        elixirBox.setAlignment(Pos.CENTER_LEFT);
-        elixirLabel = new Label("Elixir: 5");
-        elixirBar = new ProgressBar(0.5);
-        elixirBar.setPrefWidth(200);
-        elixirBox.getChildren().addAll(elixirLabel, elixirBar);
+        // Elixir displays
+        if (controller.isLocalPvP()) {
+            // Only Player 1 elixir at bottom in local PvP
+            HBox elixirBox = new HBox(10);
+            elixirBox.setAlignment(Pos.CENTER);
+            elixirLabel = new Label("Player 1 Elixir: 5");
+            elixirLabel.setStyle("-fx-font-weight: bold;");
+            elixirBar = new ProgressBar(0.5);
+            elixirBar.setPrefWidth(200);
+            elixirBox.getChildren().addAll(elixirLabel, elixirBar);
+            bottomBox.getChildren().add(elixirBox);
+        } else {
+            // Single elixir display for normal mode
+            HBox elixirBox = new HBox(10);
+            elixirBox.setAlignment(Pos.CENTER_LEFT);
+            elixirLabel = new Label("Elixir: 5");
+            elixirBar = new ProgressBar(0.5);
+            elixirBar.setPrefWidth(200);
+            elixirBox.getChildren().addAll(elixirLabel, elixirBar);
+            bottomBox.getChildren().add(elixirBox);
+        }
 
-        // Hand
+        // Hand (Player 1 hand in local PvP, or single hand in normal mode)
         handBox = new HBox(10);
         handBox.setAlignment(Pos.CENTER);
         handBox.setPrefHeight(100);
 
-        bottomBox.getChildren().addAll(elixirBox, handBox);
+        bottomBox.getChildren().add(handBox);
         root.setBottom(bottomBox);
 
         // Start Game Loop
@@ -191,9 +254,36 @@ public class GameView {
     }
 
     private void updateHUD() {
-        ElixirManager em = controller.getElixirManager();
-        elixirLabel.setText("Elixir: " + em.getElixir() + "/10");
-        elixirBar.setProgress(em.getExactElixir() / 10.0);
+        // Update Elixir displays
+        if (controller.isLocalPvP()) {
+            // Update Player 1 elixir
+            ElixirManager em1 = controller.getElixirManager();
+            elixirLabel.setText("Player 1 Elixir: " + em1.getElixir() + "/10");
+            elixirBar.setProgress(em1.getExactElixir() / 10.0);
+
+            // Update Player 2 elixir
+            ElixirManager em2 = controller.getPlayer2ElixirManager();
+            player2ElixirLabel.setText("Player 2 Elixir: " + em2.getElixir() + "/10");
+            player2ElixirBar.setProgress(em2.getExactElixir() / 10.0);
+
+            // Highlight current player's elixir
+            int currentTurn = controller.getCurrentPlayerTurn();
+            if (currentTurn == 1) {
+                elixirLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #27ae60;");
+                player2ElixirLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: gray;");
+            } else {
+                elixirLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: gray;");
+                player2ElixirLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #e67e22;");
+            }
+
+            // Update turn indicator
+            turnIndicatorLabel.setText("Player " + currentTurn + "'s Turn");
+        } else {
+            // Normal mode - single elixir
+            ElixirManager em = controller.getElixirManager();
+            elixirLabel.setText("Elixir: " + em.getElixir() + "/10");
+            elixirBar.setProgress(em.getExactElixir() / 10.0);
+        }
 
         // Update Timer
         double time = controller.getGameTime();
@@ -218,8 +308,15 @@ public class GameView {
                 }
             }
         }
-        playerScoreLabel.setText("Player: " + playerCrowns);
-        enemyScoreLabel.setText("Enemy: " + enemyCrowns);
+
+        // Update labels based on mode
+        if (controller.isLocalPvP()) {
+            playerScoreLabel.setText("Player 1: " + playerCrowns);
+            enemyScoreLabel.setText("Player 2: " + enemyCrowns);
+        } else {
+            playerScoreLabel.setText("Player: " + playerCrowns);
+            enemyScoreLabel.setText("Enemy: " + enemyCrowns);
+        }
 
         // Check if we need to refresh hand (e.g. after playing a card)
         // For simplicity, we can refresh every frame or check a flag.
@@ -237,14 +334,31 @@ public class GameView {
 
     private void updateHandView() {
         handBox.getChildren().clear();
-        Deck deck = controller.getDeck();
+        if (controller.isLocalPvP() && player2HandBox != null) {
+            player2HandBox.getChildren().clear();
+        }
+
+        if (controller.isLocalPvP()) {
+            // Update both players' hands using SEPARATE PvP decks
+            updatePlayerHand(controller.getLocalPvPPlayer1Deck(), handBox, 1);
+            updatePlayerHand(controller.getPlayer2Deck(), player2HandBox, 2);
+        } else {
+            // Normal mode - just one hand
+            updatePlayerHand(controller.getDeck(), handBox, 1);
+        }
+    }
+
+    private void updatePlayerHand(Deck deck, HBox targetHandBox, int playerNumber) {
+        if (deck == null || targetHandBox == null)
+            return;
+
         List<Card> hand = deck.getHand();
 
         for (int i = 0; i < hand.size(); i++) {
             Card card = hand.get(i);
             CardProgression progression = controller.getCardProgression(card);
             CardRarity rarity = CardLibrary.getCardRarity(card.getName());
-            
+
             // Build button text with level indicator
             String levelStars = getLevelStars(progression != null ? progression.getLevel() : 1);
             Button btnCard = new Button(card.getName() + "\n(" + card.getElixirCost() + ")\n" + levelStars);
@@ -253,23 +367,36 @@ public class GameView {
             // Apply rarity border color
             String rarityColor = getRarityBorderColor(rarity);
             String baseStyle = "-fx-border-color: " + rarityColor + "; -fx-border-width: 2px; -fx-font-size: 10px;";
-            
+
             int index = i;
+            int currentPlayer = playerNumber;
             btnCard.setOnAction(e -> {
+                // Only allow selection if it's this player's turn in PvP
+                if (controller.isLocalPvP() && controller.getCurrentPlayerTurn() != currentPlayer) {
+                    messageLabel
+                            .setText("Not your turn! It's Player " + controller.getCurrentPlayerTurn() + "'s turn.");
+                    return;
+                }
                 selectedCard = card;
                 selectedHandIndex = index;
-                messageLabel.setText("Selected: " + card.getName() + " (Level " + 
-                    (progression != null ? progression.getLevel() : 1) + ")");
+                selectedByPlayer = currentPlayer; // Track which player selected this card
+
+                // DEBUG
+                System.out.println("[DEBUG] Card selected by Player " + currentPlayer + ": " + card.getName() +
+                        " at index " + index + " (current turn: " + controller.getCurrentPlayerTurn() + ")");
+
+                messageLabel.setText("Selected: " + card.getName() + " (Level " +
+                        (progression != null ? progression.getLevel() : 1) + ")");
             });
 
             // Highlight selected with blue border, otherwise use rarity color
-            if (selectedHandIndex == i) {
+            if (selectedHandIndex == i && selectedCard == card) {
                 btnCard.setStyle(baseStyle + " -fx-border-color: blue; -fx-border-width: 3px;");
             } else {
                 btnCard.setStyle(baseStyle);
             }
 
-            handBox.getChildren().add(btnCard);
+            targetHandBox.getChildren().add(btnCard);
         }
 
         // Next Card
@@ -279,7 +406,7 @@ public class GameView {
             String nextLevelStars = getLevelStars(nextProgression != null ? nextProgression.getLevel() : 1);
             Label nextLabel = new Label("Next:\n" + next.getName() + "\n" + nextLevelStars);
             nextLabel.setStyle("-fx-font-size: 11px; -fx-text-alignment: center;");
-            handBox.getChildren().add(nextLabel);
+            targetHandBox.getChildren().add(nextLabel);
         }
     }
 
@@ -328,13 +455,34 @@ public class GameView {
             return; // Error message already set by isValidPlacement
         }
 
-        if (controller.playCard(selectedCard, x, y)) {
+        // Get the correct deck for the player who selected the card
+        Deck currentDeck;
+        boolean isPlayer1;
+        if (controller.isLocalPvP()) {
+            // Use selectedByPlayer to get the right deck (important!)
+            currentDeck = (selectedByPlayer == 1) ? controller.getLocalPvPPlayer1Deck() : controller.getPlayer2Deck();
+            isPlayer1 = (selectedByPlayer == 1);
+        } else {
+            currentDeck = controller.getDeck();
+            isPlayer1 = true;
+        }
+
+        if (controller.playCard(selectedCard, x, y, isPlayer1)) {
             // Success
-            controller.getDeck().playCard(selectedHandIndex);
+            currentDeck.playCard(selectedHandIndex);
             selectedCard = null;
             selectedHandIndex = -1;
-            messageLabel.setText("Card played!");
-            updateHandView(); // Refresh hand
+            selectedByPlayer = 0; // Reset
+
+            if (controller.isLocalPvP()) {
+                // Switch turn after successful card play
+                controller.switchTurn();
+                messageLabel.setText("Player " + controller.getCurrentPlayerTurn() + "'s turn - select a card!");
+            } else {
+                messageLabel.setText("Card played!");
+            }
+
+            updateHandView(); // Refresh hand to show next player's cards
         } else {
             messageLabel.setText("Not enough Elixir!");
         }
@@ -357,10 +505,30 @@ public class GameView {
             return true;
         }
 
-        // Troops and Buildings must be on player side (bottom half: y > 16)
-        if (y < 16) {
-            messageLabel.setText("Cannot place on enemy side!");
-            return false;
+        // In local PvP, Player 1 plays on bottom (y > 16), Player 2 plays on top (y <
+        // 16)
+        if (controller.isLocalPvP()) {
+            int currentPlayer = controller.getCurrentPlayerTurn();
+            if (currentPlayer == 1) {
+                // Player 1 plays on bottom half
+                if (y < 16) {
+                    messageLabel.setText("Player 1 must play on bottom half!");
+                    return false;
+                }
+            } else {
+                // Player 2 plays on top half
+                if (y > 16) {
+                    messageLabel.setText("Player 2 must play on top half!");
+                    return false;
+                }
+            }
+        } else {
+            // Normal mode: Troops and Buildings must be on player side (bottom half: y >
+            // 16)
+            if (y < 16) {
+                messageLabel.setText("Cannot place on enemy side!");
+                return false;
+            }
         }
 
         // Buildings cannot be placed on bridges
@@ -482,12 +650,27 @@ public class GameView {
 
         String titleText = "DRAW";
         String color = "#ecf0f1";
-        if ("WIN".equals(result)) {
-            titleText = "VICTORY!";
-            color = "#f1c40f";
-        } else if ("LOSS".equals(result)) {
-            titleText = "DEFEAT";
-            color = "#e74c3c";
+
+        if (controller.isLocalPvP()) {
+            // Local PvP - determine which player won
+            if ("WIN".equals(result)) {
+                // Player 1 wins (player side won)
+                titleText = "PLAYER 1 WINS!";
+                color = "#27ae60";
+            } else if ("LOSS".equals(result)) {
+                // Player 2 wins (enemy side won, which is Player 2 in PvP)
+                titleText = "PLAYER 2 WINS!";
+                color = "#e67e22";
+            }
+        } else {
+            // Normal mode
+            if ("WIN".equals(result)) {
+                titleText = "VICTORY!";
+                color = "#f1c40f";
+            } else if ("LOSS".equals(result)) {
+                titleText = "DEFEAT";
+                color = "#e74c3c";
+            }
         }
 
         Label titleLabel = new Label(titleText);
