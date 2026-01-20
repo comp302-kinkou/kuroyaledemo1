@@ -4,12 +4,11 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
- * Manages achievements and tracks player progress.
+ * Manages achievements and daily quests.
  * Singleton pattern - use getInstance() to access.
- * 
- * Other classes should call the onXxx() event methods when relevant actions occur.
  */
 public class QuestManager {
     
@@ -17,13 +16,14 @@ public class QuestManager {
     
     private final Map<AchievementType, Achievement> achievements;
     private final PlayerStatistics statistics;
-    
-    // Listeners for achievement completion notifications
     private final List<AchievementListener> listeners;
     
-    /**
-     * Listener interface for achievement completion events.
-     */
+    // Daily Quests
+    private static final int DAILY_QUEST_COUNT = 3;
+    private List<Quest> dailyQuests;
+    private long lastQuestResetTime;
+    private final Random random;
+    
     public interface AchievementListener {
         void onAchievementCompleted(Achievement achievement);
     }
@@ -32,8 +32,12 @@ public class QuestManager {
         this.achievements = new EnumMap<>(AchievementType.class);
         this.statistics = new PlayerStatistics();
         this.listeners = new ArrayList<>();
+        this.dailyQuests = new ArrayList<>();
+        this.random = new Random();
+        this.lastQuestResetTime = 0;
         
         initializeAchievements();
+        checkAndRefreshDailyQuests();
     }
     
     public static synchronized QuestManager getInstance() {
@@ -307,4 +311,129 @@ public class QuestManager {
     public static void resetInstance() {
         instance = null;
     }
+    
+    // ==================== Daily Quest Management ====================
+    
+    /**
+     * Checks if quests need to be refreshed and generates new ones if needed.
+     */
+    public void checkAndRefreshDailyQuests() {
+        boolean needsRefresh = false;
+        
+        if (dailyQuests.isEmpty()) {
+            needsRefresh = true;
+        } else {
+            // Check if any quest is expired (24+ hours old)
+            for (Quest quest : dailyQuests) {
+                if (quest.isExpired()) {
+                    needsRefresh = true;
+                    break;
+                }
+            }
+        }
+        
+        if (needsRefresh) {
+            generateNewDailyQuests();
+        }
+    }
+    
+    /**
+     * Generates 3 new random daily quests.
+     */
+    private void generateNewDailyQuests() {
+        dailyQuests.clear();
+        lastQuestResetTime = System.currentTimeMillis();
+        
+        QuestType[] allTypes = QuestType.values();
+        List<QuestType> availableTypes = new ArrayList<>();
+        for (QuestType type : allTypes) {
+            availableTypes.add(type);
+        }
+        
+        // Pick 3 random unique quest types
+        for (int i = 0; i < DAILY_QUEST_COUNT && !availableTypes.isEmpty(); i++) {
+            int index = random.nextInt(availableTypes.size());
+            QuestType selectedType = availableTypes.remove(index);
+            dailyQuests.add(new Quest(selectedType));
+        }
+        
+        System.out.println("New daily quests generated!");
+    }
+    
+    /**
+     * Gets the current daily quests.
+     */
+    public List<Quest> getDailyQuests() {
+        checkAndRefreshDailyQuests();
+        return new ArrayList<>(dailyQuests);
+    }
+    
+    /**
+     * Updates progress for quests of a specific type.
+     */
+    public void updateQuestProgress(QuestType type, int progress) {
+        for (Quest quest : dailyQuests) {
+            if (quest.getType() == type && !quest.isRewardClaimed()) {
+                quest.setProgress(progress);
+            }
+        }
+    }
+    
+    /**
+     * Adds progress to quests of a specific type.
+     */
+    public void addQuestProgress(QuestType type, int amount) {
+        for (Quest quest : dailyQuests) {
+            if (quest.getType() == type && !quest.isRewardClaimed()) {
+                quest.addProgress(amount);
+            }
+        }
+    }
+    
+    /**
+     * Claims reward for a daily quest.
+     */
+    public int claimQuestReward(int questIndex) {
+        if (questIndex >= 0 && questIndex < dailyQuests.size()) {
+            Quest quest = dailyQuests.get(questIndex);
+            return quest.claimReward();
+        }
+        return 0;
+    }
+    
+    /**
+     * Gets count of claimable daily quests.
+     */
+    public int getClaimableQuestCount() {
+        int count = 0;
+        for (Quest quest : dailyQuests) {
+            if (quest.canClaimReward()) {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    /**
+     * Imports daily quests from save data.
+     */
+    public void importDailyQuests(List<Quest> quests, long resetTime) {
+        if (quests != null && !quests.isEmpty()) {
+            this.dailyQuests = new ArrayList<>(quests);
+            this.lastQuestResetTime = resetTime;
+        }
+        checkAndRefreshDailyQuests();
+    }
+    
+    /**
+     * Exports daily quests for saving.
+     */
+    public List<Quest> exportDailyQuests() {
+        return new ArrayList<>(dailyQuests);
+    }
+    
+    public long getLastQuestResetTime() {
+        return lastQuestResetTime;
+    }
 }
+
