@@ -13,6 +13,7 @@ public class GameData implements Serializable {
     private PlayerProfile playerProfile;
     private QuestData questData;
     private List<CardProgression> cardProgressions;
+<<<<<<< HEAD
     private ChallengeData challengeData;
     private AchievementData achievementData;
 
@@ -22,6 +23,15 @@ public class GameData implements Serializable {
         this.questData = new QuestData();
         this.challengeData = new ChallengeData();
         this.achievementData = new AchievementData();
+=======
+    private ChallengeData challengeData; // Flexible map for challenge persistence
+
+    public GameData() {
+        this.playerProfile = new PlayerProfile();
+        this.questData = new QuestData();
+        this.cardProgressions = new java.util.ArrayList<>();
+        this.challengeData = new ChallengeData();
+>>>>>>> c0638b4 (Refine persistence implementation and fix compilation errors)
     }
 
     public PlayerProfile getPlayerProfile() {

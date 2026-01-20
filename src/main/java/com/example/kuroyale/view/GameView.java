@@ -4,6 +4,7 @@ import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.controller.GameLoop;
 import com.example.kuroyale.model.*;
 import com.example.kuroyale.model.challenge.Challenge;
+import com.example.kuroyale.model.persistence.CardProgression;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

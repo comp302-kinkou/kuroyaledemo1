@@ -4,7 +4,7 @@ import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.model.Card;
 import com.example.kuroyale.model.CardLibrary;
 import com.example.kuroyale.model.Deck;
-import com.example.kuroyale.model.CardProgression;
+import com.example.kuroyale.model.persistence.CardProgression;
 import com.example.kuroyale.model.CardRarity;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
