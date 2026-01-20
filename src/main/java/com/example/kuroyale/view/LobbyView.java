@@ -136,8 +136,9 @@ public class LobbyView {
         controlBox.setAlignment(Pos.CENTER);
 
         readyButton = new Button("Ready");
-        readyButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-size: 14px;");
-        readyButton.setDisable(true); // Enable only when connected
+        readyButton.setStyle(
+                "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
+        readyButton.setDisable(true); // Default to disabled
         readyButton.setOnAction(e -> toggleReady());
 
         startButton = new Button("Start Match");
@@ -152,24 +153,20 @@ public class LobbyView {
 
         root.getChildren().addAll(titleLabel, prepBox, connectionPanel, statusLabel, controlBox, backButton);
 
-        // Initial State check
-        if (networkManager.isConnected()) {
-            // Restore peer state for Host/Client persistence
-            if (networkManager.isHost()) {
-                // If Host, we don't know if guest is still here unless we track it
-                if (controller.isPeerConnected()) {
-                    readyButton.setDisable(false);
-                }
-            } else {
-                // If Client, we are connected to Host
-                readyButton.setDisable(false);
-            }
+        // Initial State check: Aggressive restoration
+        boolean connected = networkManager.isConnected();
+        boolean isHost = networkManager.isHost();
 
-            if (controller.isLocalReady()) {
-                applyLocalReadyUI();
-            }
-            checkStartCondition();
+        // If we are Host, we need a peer to be connected.
+        // If we are Client, being connected implies Host is there.
+        if (connected && (isHost ? controller.isPeerConnected() : true)) {
+            readyButton.setDisable(false);
         }
+
+        if (controller.isLocalReady()) {
+            applyLocalReadyUI();
+        }
+        checkStartCondition();
 
         return root;
     }
