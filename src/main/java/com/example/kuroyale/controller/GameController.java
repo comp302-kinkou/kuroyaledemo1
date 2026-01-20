@@ -68,7 +68,12 @@ public class GameController {
     public void saveGame() {
         GameData data = new GameData();
         data.setPlayerProfile(playerProfile);
+        
+        // Export daily quests to questData before saving
+        questData.setQuests(QuestManager.getInstance().exportDailyQuests());
+        questData.setLastQuestResetTimestamp(QuestManager.getInstance().getLastQuestResetTime());
         data.setQuestData(questData);
+        
         data.setCardProgressions(new ArrayList<>(cardProgressions.values()));
         data.setChallengeData(ChallengeManager.getInstance().exportData());
         data.setAchievementData(QuestManager.getInstance().exportAchievementData());
@@ -89,6 +94,15 @@ public class GameController {
 
             ChallengeManager.getInstance().importData(data.getChallengeData());
             QuestManager.getInstance().importAchievementData(data.getAchievementData());
+            
+            // Import daily quests from saved data
+            if (questData != null && questData.getQuests() != null && !questData.getQuests().isEmpty()) {
+                QuestManager.getInstance().importDailyQuests(
+                    questData.getQuests(), 
+                    questData.getLastQuestResetTimestamp()
+                );
+            }
+            
             System.out.println("Game loaded.");
         } else {
             System.out.println("No save file found. Using defaults.");

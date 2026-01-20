@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.example.kuroyale.controller.GameController;
 import com.example.kuroyale.model.persistence.ChallengeData;
 import com.example.kuroyale.model.quest.QuestManager;
 
@@ -13,7 +14,6 @@ public class ChallengeManager {
     private final Map<String, Boolean> unlockedChallenges;
     private final Map<String, Boolean> completedChallenges;
     private final Map<String, Integer> starsEarned;
-    private int totalGold;
 
     private ChallengeManager() {
         challenges = new ArrayList<>();
@@ -65,8 +65,12 @@ public class ChallengeManager {
         unlockedChallenges.put(challengeName, true);
     }
 
+    /**
+     * Gets the player's total gold from the unified PlayerProfile.
+     * @return The player's total gold balance
+     */
     public int getTotalGold() {
-        return totalGold;
+        return GameController.getInstance().getPlayerProfile().getTotalGold();
     }
 
     public void completeChallenge(String challengeName, int stars) {
@@ -74,7 +78,8 @@ public class ChallengeManager {
         if (!isCompleted(challengeName)) {
             for (Challenge c : challenges) {
                 if (c.getName().equals(challengeName)) {
-                    totalGold += c.getReward();
+                    // Add gold to unified PlayerProfile
+                    GameController.getInstance().getPlayerProfile().addGold(c.getReward());
                     // Track gold earned for achievements
                     QuestManager.getInstance().onGoldEarned(c.getReward());
                     break;

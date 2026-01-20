@@ -1,7 +1,6 @@
 package com.example.kuroyale.view;
 
 import com.example.kuroyale.controller.GameController;
-import com.example.kuroyale.controller.GameController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;

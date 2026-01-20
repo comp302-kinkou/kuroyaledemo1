@@ -5,15 +5,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.example.kuroyale.model.quest.Quest;
 
 public class QuestData implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L; // Updated version for new field
 
-    private List<String> dailyQuests; // IDs or Descriptions of active quests
+    private List<String> dailyQuests; // IDs or Descriptions of active quests (legacy)
     private Map<String, Integer> questProgress; // QuestID -> Progress count
     private long lastQuestResetTimestamp;
     private Map<String, Boolean> achievements;
     private Map<String, Integer> achievementProgress;
+    
+    // New: Store actual Quest objects for full state persistence
+    private List<Quest> quests;
 
     public QuestData() {
         this.dailyQuests = new ArrayList<>();
@@ -21,6 +25,7 @@ public class QuestData implements Serializable {
         this.lastQuestResetTimestamp = 0;
         this.achievements = new HashMap<>();
         this.achievementProgress = new HashMap<>();
+        this.quests = new ArrayList<>();
     }
 
     public List<String> getDailyQuests() {
@@ -29,6 +34,14 @@ public class QuestData implements Serializable {
 
     public void setDailyQuests(List<String> dailyQuests) {
         this.dailyQuests = dailyQuests;
+    }
+    
+    public List<Quest> getQuests() {
+        return quests;
+    }
+    
+    public void setQuests(List<Quest> quests) {
+        this.quests = quests != null ? quests : new ArrayList<>();
     }
 
     public int getQuestProgress(String questId) {

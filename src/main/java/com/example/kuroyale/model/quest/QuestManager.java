@@ -255,7 +255,15 @@ public class QuestManager {
     public int claimAchievementReward(AchievementType type) {
         Achievement achievement = achievements.get(type);
         if (achievement != null) {
-            return achievement.claimReward();
+            int reward = achievement.claimReward();
+            if (reward > 0) {
+                // Add gold to player's profile
+                com.example.kuroyale.controller.GameController.getInstance()
+                    .getPlayerProfile().addGold(reward);
+                // Auto-save after claiming
+                com.example.kuroyale.controller.GameController.getInstance().saveGame();
+            }
+            return reward;
         }
         return 0;
     }
@@ -396,7 +404,15 @@ public class QuestManager {
     public int claimQuestReward(int questIndex) {
         if (questIndex >= 0 && questIndex < dailyQuests.size()) {
             Quest quest = dailyQuests.get(questIndex);
-            return quest.claimReward();
+            int reward = quest.claimReward();
+            if (reward > 0) {
+                // Add gold to player's profile
+                com.example.kuroyale.controller.GameController.getInstance()
+                    .getPlayerProfile().addGold(reward);
+                // Auto-save after claiming
+                com.example.kuroyale.controller.GameController.getInstance().saveGame();
+            }
+            return reward;
         }
         return 0;
     }
