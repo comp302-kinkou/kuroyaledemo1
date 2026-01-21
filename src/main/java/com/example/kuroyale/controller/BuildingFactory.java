@@ -4,6 +4,14 @@ import com.example.kuroyale.model.Building;
 import com.example.kuroyale.model.Card;
 import com.example.kuroyale.model.CardProgression;
 
+/**
+ * Factory Design Pattern Implementation.
+ * <p>
+ * This class acts as a Factory for creating Building objects. It encapsulates
+ * the creation logic, including determining building types and applying stats,
+ * so that client code doesn't need to handle these details directly.
+ * </p>
+ */
 public class BuildingFactory {
 
     // Constructor with no progression

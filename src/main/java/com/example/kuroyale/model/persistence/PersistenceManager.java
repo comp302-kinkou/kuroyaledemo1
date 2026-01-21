@@ -9,6 +9,15 @@ public class PersistenceManager {
     private PersistenceManager() {
     }
 
+    /**
+     * Singleton Design Pattern Implementation.
+     * <p>
+     * Provides a single global access point to the persistence logic, ensuring
+     * consistent file I/O operations across the application.
+     * </p>
+     * 
+     * @return The single instance of PersistenceManager
+     */
     public static PersistenceManager getInstance() {
         if (instance == null) {
             instance = new PersistenceManager();

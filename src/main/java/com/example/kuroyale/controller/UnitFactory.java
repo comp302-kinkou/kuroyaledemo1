@@ -4,6 +4,15 @@ import com.example.kuroyale.model.Card;
 import com.example.kuroyale.model.CardProgression;
 import com.example.kuroyale.model.Unit;
 
+/**
+ * Factory Design Pattern Implementation.
+ * <p>
+ * This class acts as a Factory for creating Unit objects. It encapsulates
+ * the logic for instantiating Units, including applying level-based
+ * bonuses from progression data. This simplifies client code by abstracting
+ * the complexity of object creation.
+ * </p>
+ */
 public class UnitFactory {
 
     // Constructor with no progression

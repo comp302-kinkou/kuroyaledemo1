@@ -12,6 +12,15 @@ public interface Challenge {
     int getReward();
 
     /**
+     * Strategy Design Pattern Implementation.
+     * <p>
+     * This interface acts as the Strategy in the Strategy Pattern. It defines a
+     * family of algorithms
+     * (challenges) that can be selected and exchanged at runtime, allowing the game
+     * to switch
+     * between different game modes/rulesets dynamically.
+     * </p>
+     * 
      * Validates if the deck meets the challenge requirements
      * 
      * @param deck The player's deck to validate

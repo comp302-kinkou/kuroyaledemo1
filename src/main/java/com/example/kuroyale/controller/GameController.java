@@ -204,6 +204,15 @@ public class GameController {
         return isTestingMode;
     }
 
+    /**
+     * Singleton Design Pattern Implementation.
+     * <p>
+     * Ensures that only one instance of GameController exists to manage the central
+     * game state and coordinate game logic.
+     * </p>
+     * 
+     * @return The single instance of GameController
+     */
     public static GameController getInstance() {
         if (instance == null) {
             instance = new GameController();
