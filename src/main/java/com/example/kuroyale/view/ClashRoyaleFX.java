@@ -41,7 +41,7 @@ public class ClashRoyaleFX extends Application {
 
     public void showGameView() {
         GameView view = new GameView(this);
-        Scene scene = new Scene(view.getView(), 600, 800); // Larger for game
+        Scene scene = new Scene(view.getView(), 900, 950); // Increased size for Player 1 hand visibility
         primaryStage.setScene(scene);
     }
 
@@ -59,7 +59,8 @@ public class ClashRoyaleFX extends Application {
             System.err.println("Error showing card upgrade view: " + e.getMessage());
             e.printStackTrace();
             // Show error to user
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Failed to open Card Upgrade view");
             alert.setContentText("An error occurred: " + e.getMessage());
@@ -78,7 +79,7 @@ public class ClashRoyaleFX extends Application {
         Scene scene = new Scene(view.getView(), 600, 700);
         primaryStage.setScene(scene);
     }
-    
+
     public void showPlayerStats() {
         PlayerStatsView view = new PlayerStatsView(this);
         Scene scene = new Scene(view.getView(), 600, 700);

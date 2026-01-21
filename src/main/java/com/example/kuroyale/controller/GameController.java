@@ -261,15 +261,27 @@ public class GameController {
         if (isLocalPvP) {
             return isDeckSaved && isPlayer2DeckSaved && isArenaSaved;
         }
-        return isDeckSaved && isArenaSaved;
+        // For normal/challenge mode, check actual data presence
+        return isDeckReady() && isArenaReady();
     }
 
     public boolean isDeckReady() {
-        return isDeckSaved;
+        // Check both flag AND actual deck content
+        // Deck should have exactly 8 cards to be considered ready
+        return deck != null && deck.getCards() != null && deck.getCards().size() == 8;
     }
 
     public boolean isArenaReady() {
-        return isArenaSaved;
+        // Check both flag AND actual arena content
+        // Arena should have at least 3 towers (1 King + 2 Princess per side = 6 total)
+        // and at least 1 bridge
+        if (arena == null)
+            return false;
+
+        boolean hasTowers = arena.getTowers() != null && arena.getTowers().size() >= 6;
+        boolean hasBridges = arena.getBridges() != null && arena.getBridges().size() >= 1;
+
+        return hasTowers && hasBridges;
     }
 
     // Local PvP Methods
@@ -316,6 +328,9 @@ public class GameController {
     }
 
     public void resetGameMode() {
+        // Track if we were in Local PvP before reset
+        boolean wasLocalPvP = isLocalPvP;
+
         isLocalPvP = false;
         isPlayer2DeckSaved = false;
         currentPlayerTurn = 1;
@@ -329,12 +344,18 @@ public class GameController {
         localPvPPlayer1Towers.clear();
         localPvPPlayer2Towers.clear();
 
-        // Clear arena towers to prevent Local PvP arena from persisting
-        arena.clearTowers();
-        arena.clearBridges(); // Also clear bridges from Local PvP
-
-        // Reset arena saved flag so normal game requires arena design
-        isArenaSaved = false;
+        // Only clear arena state if we were in Local PvP mode
+        // This preserves the player's saved normal arena design for challenges
+        if (wasLocalPvP) {
+            arena.clearTowers();
+            arena.clearBridges();
+            // Only reset arena saved flag if we came from Local PvP
+            // (Local PvP uses different arena design flow)
+            isArenaSaved = false;
+        }
+        // NOTE: isArenaSaved and isDeckSaved are NOT reset for normal game/challenge
+        // transitions
+        // This allows arena/deck designs to persist across mode changes
 
         // IMPORTANT: Clear all game state
         activeUnits.clear();
@@ -353,7 +374,7 @@ public class GameController {
             System.out.println("Restored player deck after reset.");
         }
 
-        System.out.println("Game mode reset to normal.");
+        System.out.println("Game mode reset to normal." + (wasLocalPvP ? " (from Local PvP)" : ""));
     }
 
     public void startGame() {
