@@ -91,6 +91,12 @@ public class ClashRoyaleFX extends Application {
         primaryStage.setScene(scene);
     }
 
+    public void showLocalPvPArenaDesign() {
+        LocalPvPArenaDesign view = new LocalPvPArenaDesign(this);
+        Scene scene = new Scene(view.getView(), 500, 850);
+        primaryStage.setScene(scene);
+    }
+
     public static void main(String[] args) {
         launch(args);
     }

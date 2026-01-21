@@ -43,6 +43,10 @@ public class GameController {
     private int currentPlayerTurn = 1; // 1 or 2
     private boolean isPlayer2DeckSaved = false;
 
+    // Local PvP Arena Design
+    private List<Tower> localPvPPlayer1Towers = new ArrayList<>();
+    private List<Tower> localPvPPlayer2Towers = new ArrayList<>();
+
     private double gameTime;
 
     private boolean isDeckSaved = false;
@@ -72,12 +76,12 @@ public class GameController {
     public void saveGame() {
         GameData data = new GameData();
         data.setPlayerProfile(playerProfile);
-        
+
         // Export daily quests to questData before saving
         questData.setQuests(QuestManager.getInstance().exportDailyQuests());
         questData.setLastQuestResetTimestamp(QuestManager.getInstance().getLastQuestResetTime());
         data.setQuestData(questData);
-        
+
         data.setCardProgressions(new ArrayList<>(cardProgressions.values()));
         data.setChallengeData(ChallengeManager.getInstance().exportData());
         data.setAchievementData(QuestManager.getInstance().exportAchievementData());
@@ -98,15 +102,14 @@ public class GameController {
 
             ChallengeManager.getInstance().importData(data.getChallengeData());
             QuestManager.getInstance().importAchievementData(data.getAchievementData());
-            
+
             // Import daily quests from saved data
             if (questData != null && questData.getQuests() != null && !questData.getQuests().isEmpty()) {
                 QuestManager.getInstance().importDailyQuests(
-                    questData.getQuests(), 
-                    questData.getLastQuestResetTimestamp()
-                );
+                        questData.getQuests(),
+                        questData.getLastQuestResetTimestamp());
             }
-            
+
             System.out.println("Game loaded.");
         } else {
             System.out.println("No save file found. Using defaults.");
@@ -301,6 +304,17 @@ public class GameController {
         localPvPPlayer2Deck = new Deck();
         player2ElixirManager = new ElixirManager();
 
+        // Clear Local PvP tower layouts
+        localPvPPlayer1Towers.clear();
+        localPvPPlayer2Towers.clear();
+
+        // Clear arena towers to prevent Local PvP arena from persisting
+        arena.clearTowers();
+        arena.clearBridges(); // Also clear bridges from Local PvP
+
+        // Reset arena saved flag so normal game requires arena design
+        isArenaSaved = false;
+
         // IMPORTANT: Clear all game state
         activeUnits.clear();
         activeBuildings.clear();
@@ -393,8 +407,28 @@ public class GameController {
 
         timeScale = 1.0;
 
-        // Setup arena if needed
-        if (arena.getTowers().isEmpty()) {
+        // Apply custom tower layouts if available
+        if (!localPvPPlayer1Towers.isEmpty() && !localPvPPlayer2Towers.isEmpty()) {
+            arena.clearTowers();
+
+            // CRITICAL: Add bridges for Local PvP (fixed positions)
+            arena.clearBridges();
+            arena.addBridge("Bridge 1", 5.0);
+            arena.addBridge("Bridge 2", 11.0);
+
+            // Add Player 1's towers (bottom side, isPlayer=true)
+            for (Tower t : localPvPPlayer1Towers) {
+                arena.addTower(t);
+            }
+
+            // Add Player 2's towers (top side, isPlayer=false, already mirrored)
+            for (Tower t : localPvPPlayer2Towers) {
+                arena.addTower(t);
+            }
+
+            System.out.println("Custom tower layouts applied for Local PvP!");
+        } else if (arena.getTowers().isEmpty()) {
+            // Fallback to default
             arena.setupDefaultTowers();
         }
 
@@ -767,7 +801,7 @@ public class GameController {
         } else {
             elixirSpent = rsc.spendElixir(cost);
         }
-        
+
         if (!elixirSpent) {
             // If remote player (Multiplayer and !isPlayer), we must allow it to sync
             // The remote client is the authority on valid moves for themselves
@@ -779,11 +813,11 @@ public class GameController {
                 return false;
             }
         }
-        
+
         // Track PLAY_CARDS_SINGLE_MATCH quest for player
         if (isPlayer) {
             QuestManager.getInstance().addQuestProgress(
-                com.example.kuroyale.model.quest.QuestType.PLAY_CARDS_SINGLE_MATCH, 1);
+                    com.example.kuroyale.model.quest.QuestType.PLAY_CARDS_SINGLE_MATCH, 1);
         }
 
         // Get card progression for level bonuses
@@ -828,7 +862,8 @@ public class GameController {
                     int troopCount = card.getName().contains("Army") ? 15 : card.getName().contains("Horde") ? 6 : 1;
                     QuestManager.getInstance().onTroopsDeployed(troopCount);
                     // Track troop deployment for quests (each card counts as 1 deployment)
-                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.DEPLOY_TROOPS, 1);
+                    QuestManager.getInstance()
+                            .addQuestProgress(com.example.kuroyale.model.quest.QuestType.DEPLOY_TROOPS, 1);
                 }
 
                 // Console output - different for Local PvP
@@ -845,12 +880,13 @@ public class GameController {
             case "BUILDING":
                 Building newBuilding = BuildingFactory.createBuilding(card, x, y, isPlayer, progression);
                 activeBuildings.add(newBuilding);
-                
+
                 // Track building deployment for quests
                 if (isPlayer) {
-                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_BUILDINGS, 1);
+                    QuestManager.getInstance()
+                            .addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_BUILDINGS, 1);
                 }
-                
+
                 System.out.println(
                         (isPlayer ? "Player" : "Computer") + " placed Building: " + card.getName() + " (Level " +
                                 (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
@@ -859,12 +895,13 @@ public class GameController {
             case "SPELL":
                 applySpellDamage(card, x, y, progression); // Spell works same way, damage logic handles friend/foe
                                                            // based on target
-                
+
                 // Track spell deployment for quests
                 if (isPlayer) {
-                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_SPELLS, 1);
+                    QuestManager.getInstance().addQuestProgress(com.example.kuroyale.model.quest.QuestType.PLAY_SPELLS,
+                            1);
                 }
-                
+
                 System.out.println((isPlayer ? "Player" : "Computer") + " cast Spell: " + card.getName() + " (Level " +
                         (progression != null ? progression.getLevel() : 1) + ") at (" + x + ", " + y + ")");
                 break;
@@ -940,6 +977,56 @@ public class GameController {
                 System.err.println("Error parsing opponent tower: " + ts);
             }
         }
+    }
+
+    /**
+     * Store Player 1's tower layout for Local PvP
+     */
+    public void setLocalPvPPlayer1Towers(String layoutData) {
+        localPvPPlayer1Towers.clear();
+        String[] towerStrings = layoutData.split(";");
+        for (String ts : towerStrings) {
+            if (ts.isEmpty())
+                continue;
+            try {
+                // Format: Type,x,y
+                String[] parts = ts.split(",");
+                String type = parts[0];
+                double x = Double.parseDouble(parts[1]);
+                double y = Double.parseDouble(parts[2]);
+                localPvPPlayer1Towers.add(new Tower(type, x, y, true));
+            } catch (Exception e) {
+                System.err.println("Error parsing Player 1 tower: " + ts);
+            }
+        }
+        System.out.println("Player 1 tower layout stored: " + localPvPPlayer1Towers.size() + " towers");
+    }
+
+    /**
+     * Store Player 2's tower layout for Local PvP
+     * Note: Towers are automatically mirrored to the top side
+     */
+    public void setLocalPvPPlayer2Towers(String layoutData) {
+        localPvPPlayer2Towers.clear();
+        String[] towerStrings = layoutData.split(";");
+        for (String ts : towerStrings) {
+            if (ts.isEmpty())
+                continue;
+            try {
+                // Format: Type,x,y
+                String[] parts = ts.split(",");
+                String type = parts[0];
+                double x = Double.parseDouble(parts[1]);
+                double y = Double.parseDouble(parts[2]);
+                // Player 2 towers are mirrored (both X and Y, like multiplayer)
+                double mirrorX = arena.getWidth() - x;
+                double mirrorY = arena.getHeight() - y;
+                localPvPPlayer2Towers.add(new Tower(type, mirrorX, mirrorY, false));
+            } catch (Exception e) {
+                System.err.println("Error parsing Player 2 tower: " + ts);
+            }
+        }
+        System.out.println("Player 2 tower layout stored (mirrored): " + localPvPPlayer2Towers.size() + " towers");
     }
 
     public long getMultiplayerSeed() {
@@ -1195,12 +1282,12 @@ public class GameController {
 
         if ("WIN".equals(result)) {
             qm.onMatchWon(isMultiplayer);
-            
+
             // Track WIN_PVP for local PvP wins
             if (isLocalPvP) {
                 qm.addQuestProgress(com.example.kuroyale.model.quest.QuestType.WIN_PVP, 1);
             }
-            
+
             // Track PERFECT_WIN if player didn't lose any crown towers
             boolean lostAnyCrownTower = false;
             for (Tower tower : arena.getTowers()) {
@@ -1212,7 +1299,7 @@ public class GameController {
             if (!lostAnyCrownTower) {
                 qm.addQuestProgress(com.example.kuroyale.model.quest.QuestType.PERFECT_WIN, 1);
             }
-            
+
             if (playerProfile != null) {
                 playerProfile.incrementWins();
                 playerProfile.addGold(150); // Victory Gold

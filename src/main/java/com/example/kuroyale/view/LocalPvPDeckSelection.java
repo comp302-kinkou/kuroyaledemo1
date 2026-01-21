@@ -200,22 +200,12 @@ public class LocalPvPDeckSelection {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Both Decks Ready");
             alert.setHeaderText(null);
-            alert.setContentText("Both players' decks saved! Starting Local PvP game...");
+            alert.setContentText("Both players' decks saved! Now design arenas.");
             alert.showAndWait();
 
-            // Start the local PvP game
-            startLocalPvPGame();
+            // Proceed to arena design
+            mainApp.showLocalPvPArenaDesign();
         }
-    }
-
-    private void startLocalPvPGame() {
-        if (!controller.isArenaReady()) {
-            showAlert("Arena Not Ready", "Please design the arena before starting!");
-            return;
-        }
-
-        controller.startLocalPvPGame();
-        mainApp.showGameView();
     }
 
     private void showAlert(String title, String content) {

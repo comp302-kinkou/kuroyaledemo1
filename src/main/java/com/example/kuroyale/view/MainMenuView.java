@@ -4,7 +4,6 @@ import com.example.kuroyale.controller.GameController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -73,15 +72,7 @@ public class MainMenuView {
 
         Button btnLocalPvP = new Button("Local PvP");
         btnLocalPvP.setOnAction(e -> {
-            // Check if game is ready (Deck + Arena)
-            if (!controller.isGameReady()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Not Ready");
-                alert.setHeaderText(null);
-                alert.setContentText("Please build a deck and design the arena before starting Local PvP!");
-                alert.showAndWait();
-                return;
-            }
+            // Deck and arena design are now part of the Local PvP flow
             mainApp.showLocalPvPDeckSelection();
         });
         btnLocalPvP.setMaxWidth(200);
