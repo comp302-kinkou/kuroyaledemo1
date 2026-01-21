@@ -62,7 +62,7 @@ public class ComboManager {
         cleanupOldComboTriggers(timestamp);
 
         // Detect combos with the newly played card
-        return detectCombos(card, timestamp);
+        return detectCombos(playedCard, timestamp);
     }
 
     /**
@@ -95,12 +95,13 @@ public class ComboManager {
     /**
      * Detects combos involving the newly played card.
      * Checks all cards within the time window against all combo definitions.
+     * Only matches cards played by the same player.
      * 
-     * @param newlyPlayedCard The card that was just played
+     * @param newlyPlayedCard The PlayedCard that was just played
      * @param currentTimestamp Current timestamp
      * @return List of detected combos
      */
-    private List<DetectedCombo> detectCombos(Card newlyPlayedCard, long currentTimestamp) {
+    private List<DetectedCombo> detectCombos(PlayedCard newlyPlayedCard, long currentTimestamp) {
         List<DetectedCombo> detectedCombos = new ArrayList<>();
         
         // Get all cards within the time window
@@ -110,8 +111,16 @@ public class ComboManager {
             return detectedCombos; // Need at least 2 cards for a combo
         }
 
+        Card newlyPlayedCardObj = newlyPlayedCard.getCard();
+        if (newlyPlayedCardObj == null) {
+            return detectedCombos;
+        }
+        
+        // Get the player identifier for the newly played card
+        boolean isPlayer = newlyPlayedCard.isPlayer();
+        
         // Check the newly played card against all other cards in the window
-        String newCardName = newlyPlayedCard.getName();
+        String newCardName = newlyPlayedCardObj.getName();
         
         for (PlayedCard otherPlayedCard : cardsInWindow) {
             Card otherCard = otherPlayedCard.getCard();
@@ -125,19 +134,24 @@ public class ComboManager {
                 continue; // This is the same card play, skip it
             }
             
+            // Only consider combos between cards played by the same player
+            if (otherPlayedCard.isPlayer() != isPlayer) {
+                continue; // Different players, skip this combo
+            }
+            
             String otherCardName = otherCard.getName();
             
             // Check against all combo definitions
             for (ComboDefinition definition : allComboDefinitions) {
                 if (definition.matches(newCardName, otherCardName)) {
-                    // Check if this combo was already triggered recently
-                    String comboKey = createComboKey(definition.getComboType(), newCardName, otherCardName);
+                    // Check if this combo was already triggered recently for this player
+                    String comboKey = createComboKey(definition.getComboType(), newCardName, otherCardName, isPlayer);
                     
                     if (!recentlyTriggeredCombos.contains(comboKey)) {
                         // New combo detected!
                         DetectedCombo detected = new DetectedCombo(
                             definition.getComboType(),
-                            newlyPlayedCard,
+                            newlyPlayedCardObj,
                             otherCard,
                             definition.getEffect(),
                             currentTimestamp
@@ -160,11 +174,13 @@ public class ComboManager {
 
     // Creates a normalized key for a combo to prevent duplicate triggers.
     // Ensures the same combo with the same cards can't trigger twice in the same window.
-    private String createComboKey(ComboType comboType, String card1Name, String card2Name) {
+    // Includes player identifier so combos are tracked separately per player.
+    private String createComboKey(ComboType comboType, String card1Name, String card2Name, boolean isPlayer) {
         // Normalize card names (alphabetically) so order doesn't matter for the key
         String first = card1Name.compareTo(card2Name) < 0 ? card1Name : card2Name;
         String second = card1Name.compareTo(card2Name) < 0 ? card2Name : card1Name;
-        return comboType.name() + ":" + first + ":" + second;
+        String playerId = isPlayer ? "PLAYER" : "COMPUTER";
+        return comboType.name() + ":" + first + ":" + second + ":" + playerId;
     }
 
     // Cleans up combo trigger records that are older than the time window.
