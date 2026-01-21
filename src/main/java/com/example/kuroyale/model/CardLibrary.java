@@ -137,10 +137,13 @@ public class CardLibrary {
 
         // Gets the rarity of a card by its name.
         public static CardRarity getCardRarity(String cardName) {
-                // Common cards (12 total)
+                // Common cards (12 total) - as per spec
+                // Listed in spec: Skeletons, Goblins, Spear Goblins, Archers, Knight, Bomber,
+                // Cannon, Tombstone, Arrows, Zap
+                // + Barbarian Hut, Elixir Collector (to complete 12)
                 String[] commonCards = {
                                 "Skeletons", "Goblins", "Spear Goblins", "Archers", "Knight", "Bomber",
-                                "Cannon", "Tombstone", "Arrows", "Zap"
+                                "Cannon", "Tombstone", "Arrows", "Zap", "Barbarian Hut", "Elixir Collector"
                 };
                 for (String name : commonCards) {
                         if (name.equalsIgnoreCase(cardName)) {
@@ -148,10 +151,13 @@ public class CardLibrary {
                         }
                 }
 
-                // Rare cards (10 total)
+                // Rare cards (10 total) - as per spec
+                // Listed in spec: Musketeer, Mini P.E.K.K.A, Valkyrie, Minions, Barbarians,
+                // Tesla, Mortar, Goblin Hut, Fireball
+                // + Rocket (to complete 10)
                 String[] rareCards = {
                                 "Musketeer", "Mini P.E.K.K.A", "Valkyrie", "Minions", "Barbarians",
-                                "Tesla", "Mortar", "Goblin Hut", "Fireball"
+                                "Tesla", "Mortar", "Goblin Hut", "Fireball", "Rocket"
                 };
                 for (String name : rareCards) {
                         if (name.equalsIgnoreCase(cardName)) {
@@ -159,7 +165,7 @@ public class CardLibrary {
                         }
                 }
 
-                // Epic cards (4 total)
+                // Epic cards (4 total) - as per spec
                 String[] epicCards = {
                                 "Giant", "Wizard", "Bomb Tower", "Inferno Tower"
                 };
@@ -169,7 +175,7 @@ public class CardLibrary {
                         }
                 }
 
-                // Legendary cards (2 total)
+                // Legendary cards (2 total) - as per spec
                 String[] legendaryCards = {
                                 "Hog Rider", "Minion Horde"
                 };

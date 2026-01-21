@@ -165,7 +165,28 @@ public class GameController {
         // Actually, let's try to load automatically for convenience.
         loadGame();
 
+        // Ensure all 28 cards have progression entries
+        initializeAllCardProgressions();
+
         initializeCards(); // Populate the deck with available cards
+    }
+
+    /**
+     * Ensures all cards from CardLibrary have progression entries.
+     * Creates default Level 1 progression for any missing cards.
+     */
+    private void initializeAllCardProgressions() {
+        List<Card> allCards = CardLibrary.getAllCards();
+        for (Card card : allCards) {
+            if (!cardProgressions.containsKey(card.getName())) {
+                CardRarity rarity = CardLibrary.getCardRarity(card.getName());
+                if (rarity != null) {
+                    CardProgression cp = new CardProgression(card.getName(), rarity);
+                    cardProgressions.put(card.getName(), cp);
+                }
+            }
+        }
+        System.out.println("Card progressions initialized: " + cardProgressions.size() + "/28 cards");
     }
 
     public void startChallenge(Challenge challenge) {
@@ -720,7 +741,7 @@ public class GameController {
         }
         return null; // Card not found in library
     }
-    
+
     /**
      * Gets all card progressions for stats display.
      */

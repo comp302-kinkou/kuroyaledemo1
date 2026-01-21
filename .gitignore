@@ -5,7 +5,9 @@ target/
 .DS_Store
 *.pdf
 *.py
-*.txt
+
+# Keep network config but ignore save files
 !network config.txt
+savegame.dat
 
 !network config.txt

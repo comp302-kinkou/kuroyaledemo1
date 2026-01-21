@@ -1,5 +1,79 @@
+# ============================================================
+# Network Configuration File for KU-Royale Multiplayer
+# ============================================================
+#
+# This file contains network settings for multiplayer functionality.
+# Lines starting with '#' are comments and will be ignored.
+#
+# To modify settings, change the value after the '=' sign.
+# Invalid values will fall back to defaults.
+#
+# ============================================================
+
+# ------------------------------------------------------------
+# DEFAULT_PORT
+# ------------------------------------------------------------
+# The TCP port number used for hosting and joining games.
+# This port must be available and not blocked by firewall.
+#
+# Valid range: 1024 - 65535
+# Recommended: 8080 (HTTP alternate) or 9000+ (custom apps)
+# Default: 8080
+# ------------------------------------------------------------
 DEFAULT_PORT=8080
+
+# ------------------------------------------------------------
+# CONNECTION_TIMEOUT
+# ------------------------------------------------------------
+# Maximum time (in milliseconds) to wait when connecting to
+# a remote host before giving up.
+#
+# Valid range: 1000 - 30000 (1 to 30 seconds)
+# Lower values: Faster failure detection, may fail on slow networks
+# Higher values: More patient, but delays error feedback
+# Default: 5000 (5 seconds)
+# ------------------------------------------------------------
 CONNECTION_TIMEOUT=5000
+
+# ------------------------------------------------------------
+# RECONNECT_ATTEMPTS
+# ------------------------------------------------------------
+# Number of times to attempt reconnection if the connection
+# is lost during gameplay.
+#
+# Valid range: 0 - 10
+# 0 = No reconnection attempts (disconnect immediately)
+# Higher values = More resilient but may delay disconnect notification
+# Default: 3
+# ------------------------------------------------------------
 RECONNECT_ATTEMPTS=3
+
+# ------------------------------------------------------------
+# SYNC_INTERVAL
+# ------------------------------------------------------------
+# Time interval (in milliseconds) between game state
+# synchronization messages sent to the opponent.
+#
+# Valid range: 50 - 500
+# Lower values: Smoother gameplay, higher network usage
+# Higher values: Less bandwidth, potential lag/desync
+# Default: 100 (10 updates per second)
+# ------------------------------------------------------------
 SYNC_INTERVAL=100
+
+# ------------------------------------------------------------
+# MAX_MESSAGE_SIZE
+# ------------------------------------------------------------
+# Maximum size (in bytes) of a single network message.
+# Messages exceeding this size will be rejected.
+#
+# Valid range: 512 - 8192
+# Larger values: Support more complex game states
+# Smaller values: Faster transmission, less memory usage
+# Default: 1024 (1 KB)
+# ------------------------------------------------------------
 MAX_MESSAGE_SIZE=1024
+
+# ============================================================
+# End of Configuration
+# ============================================================

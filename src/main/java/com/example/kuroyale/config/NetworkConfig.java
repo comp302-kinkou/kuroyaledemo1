@@ -56,12 +56,36 @@ public class NetworkConfig {
 
     private void createDefaultConfig() {
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
-            writer.write("DEFAULT_PORT=" + defaultPort + "\n");
-            writer.write("CONNECTION_TIMEOUT=" + connectionTimeout + "\n");
-            writer.write("RECONNECT_ATTEMPTS=" + reconnectAttempts + "\n");
-            writer.write("SYNC_INTERVAL=" + syncInterval + "\n");
+            writer.write("# ============================================================\n");
+            writer.write("# Network Configuration File for KU-Royale Multiplayer\n");
+            writer.write("# ============================================================\n");
+            writer.write("#\n");
+            writer.write("# This file contains network settings for multiplayer functionality.\n");
+            writer.write("# Lines starting with '#' are comments and will be ignored.\n");
+            writer.write("#\n");
+            writer.write("# ============================================================\n\n");
+
+            writer.write("# DEFAULT_PORT - TCP port for hosting/joining games\n");
+            writer.write("# Valid range: 1024 - 65535 | Default: 8080\n");
+            writer.write("DEFAULT_PORT=" + defaultPort + "\n\n");
+
+            writer.write("# CONNECTION_TIMEOUT - Max wait time (ms) when connecting\n");
+            writer.write("# Valid range: 1000 - 30000 | Default: 5000 (5 seconds)\n");
+            writer.write("CONNECTION_TIMEOUT=" + connectionTimeout + "\n\n");
+
+            writer.write("# RECONNECT_ATTEMPTS - Retry count if connection is lost\n");
+            writer.write("# Valid range: 0 - 10 | Default: 3\n");
+            writer.write("RECONNECT_ATTEMPTS=" + reconnectAttempts + "\n\n");
+
+            writer.write("# SYNC_INTERVAL - Time (ms) between state sync messages\n");
+            writer.write("# Valid range: 50 - 500 | Default: 100 (10 updates/sec)\n");
+            writer.write("SYNC_INTERVAL=" + syncInterval + "\n\n");
+
+            writer.write("# MAX_MESSAGE_SIZE - Maximum network message size (bytes)\n");
+            writer.write("# Valid range: 512 - 8192 | Default: 1024 (1 KB)\n");
             writer.write("MAX_MESSAGE_SIZE=" + maxMessageSize + "\n");
-            System.out.println("Created default network config file.");
+
+            System.out.println("Created default network config file with comments.");
         } catch (IOException e) {
             System.err.println("Failed to create default config file: " + e.getMessage());
         }
