@@ -38,7 +38,11 @@ public class CardUpgradeView {
         Label titleLabel = new Label("Card Upgrade & Evolution");
         titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
 
-        goldLabel = new Label("Gold: " + controller.getPlayerProfile().getTotalGold());
+        int goldAmount = 0;
+        if (controller != null && controller.getPlayerProfile() != null) {
+            goldAmount = controller.getPlayerProfile().getTotalGold();
+        }
+        goldLabel = new Label("Gold: " + goldAmount);
         goldLabel.setStyle(
                 "-fx-font-size: 18px; -fx-text-fill: gold; -fx-font-weight: bold; -fx-effect: dropshadow(one-pass-box, black, 2, 0.0, 1, 1);");
 
@@ -102,8 +106,20 @@ public class CardUpgradeView {
         cardBox.setMinWidth(120);
         cardBox.setMaxWidth(120);
 
-        CardProgression progression = controller.getCardProgression(card);
+        if (card == null) {
+            Label errorLabel = new Label("Error: Null card");
+            cardBox.getChildren().add(errorLabel);
+            return cardBox;
+        }
+
+        CardProgression progression = controller != null ? controller.getCardProgression(card) : null;
         CardRarity rarity = CardLibrary.getCardRarity(card.getName());
+
+        if (progression == null || rarity == null) {
+            Label errorLabel = new Label("Error loading card data");
+            cardBox.getChildren().add(errorLabel);
+            return cardBox;
+        }
 
         // Determine border color based on rarity
         String borderColor = getRarityBorderColor(rarity);
@@ -187,6 +203,9 @@ public class CardUpgradeView {
 
         // Create dialog
         Dialog<ButtonType> dialog = new Dialog<>();
+        if (goldLabel != null && goldLabel.getScene() != null && goldLabel.getScene().getWindow() != null) {
+            dialog.initOwner(goldLabel.getScene().getWindow());
+        }
         dialog.setTitle("Upgrade Card");
         dialog.setHeaderText("Upgrade " + card.getName());
 
@@ -249,19 +268,20 @@ public class CardUpgradeView {
         }
 
         dialog.setResultConverter(buttonType -> {
+            return buttonType == upgradeButtonType ? upgradeButtonType : null;
+        });
+
+        dialog.showAndWait().ifPresent(buttonType -> {
             if (buttonType == upgradeButtonType) {
                 if (controller.upgradeCard(card)) {
-                    showAlert("Success", card.getName() + " upgraded to Level " + nextLevel + "!");
                     updateGoldDisplay();
                     loadCards(); // Refresh the card grid
+                    showAlert("Success", card.getName() + " upgraded to Level " + nextLevel + "!");
                 } else {
                     showAlert("Error", "Failed to upgrade card. Please check your gold balance.");
                 }
             }
-            return null;
         });
-
-        dialog.showAndWait();
     }
 
     private double getStatMultiplierForLevel(int level) {
@@ -278,11 +298,16 @@ public class CardUpgradeView {
     }
 
     private void updateGoldDisplay() {
-        goldLabel.setText("Gold: " + controller.getPlayerProfile().getTotalGold());
+        if (goldLabel != null && controller != null && controller.getPlayerProfile() != null) {
+            goldLabel.setText("Gold: " + controller.getPlayerProfile().getTotalGold());
+        }
     }
 
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        if (goldLabel != null && goldLabel.getScene() != null && goldLabel.getScene().getWindow() != null) {
+            alert.initOwner(goldLabel.getScene().getWindow());
+        }
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);

@@ -51,9 +51,20 @@ public class ClashRoyaleFX extends Application {
     }
 
     public void showCardUpgrade() {
-        CardUpgradeView view = new CardUpgradeView(this);
-        Scene scene = new Scene(view.getView(), 1000, 700);
-        primaryStage.setScene(scene);
+        try {
+            CardUpgradeView view = new CardUpgradeView(this);
+            Scene scene = new Scene(view.getView(), 1000, 700);
+            primaryStage.setScene(scene);
+        } catch (Exception e) {
+            System.err.println("Error showing card upgrade view: " + e.getMessage());
+            e.printStackTrace();
+            // Show error to user
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to open Card Upgrade view");
+            alert.setContentText("An error occurred: " + e.getMessage());
+            alert.showAndWait();
+        }
     }
 
     public void showLobby() {
