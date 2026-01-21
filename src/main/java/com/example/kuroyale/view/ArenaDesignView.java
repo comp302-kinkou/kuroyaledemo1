@@ -200,7 +200,16 @@ public class ArenaDesignView {
                 showAlert("Limit Reached", "Max 3 bridges allowed.");
                 return;
             }
-            tempBridges.add(new Arena.Bridge("Bridge " + (tempBridges.size() + 1), gameX - 1.0, 2.0));
+            
+            // Check if new bridge would overlap with existing bridges
+            double newBridgeX = gameX - 1.0;
+            double newBridgeWidth = 2.0;
+            if (bridgeOverlapsBridges(newBridgeX, newBridgeWidth)) {
+                showAlert("Invalid Placement", "Bridges cannot overlap with each other! Please choose a different location.");
+                return;
+            }
+            
+            tempBridges.add(new Arena.Bridge("Bridge " + (tempBridges.size() + 1), newBridgeX, newBridgeWidth));
 
         } else if (currentTool.equals("KING") || currentTool.equals("PRINCESS")) {
             if (!isBottomSide) {
@@ -211,6 +220,12 @@ public class ArenaDesignView {
             // Check counts
             long kingCount = tempTowers.stream().filter(t -> t.isPlayer() && isKing(t)).count();
             long princessCount = tempTowers.stream().filter(t -> t.isPlayer() && !isKing(t)).count();
+
+            // Check if new tower would overlap with existing towers
+            if (towerOverlapsTowers(gameX, gameY)) {
+                showAlert("Invalid Placement", "Towers cannot overlap with each other! Please choose a different location.");
+                return;
+            }
 
             if (currentTool.equals("KING")) {
                 if (kingCount >= 1) {
@@ -228,6 +243,46 @@ public class ArenaDesignView {
         }
 
         render();
+    }
+
+    /**
+     * Checks if a new bridge would overlap with any existing bridge.
+     * Bridges are rectangles - they overlap if their x-ranges intersect.
+     */
+    private boolean bridgeOverlapsBridges(double newBridgeX, double newBridgeWidth) {
+        double newLeft = newBridgeX;
+        double newRight = newBridgeX + newBridgeWidth;
+        
+        for (Arena.Bridge existing : tempBridges) {
+            double existingLeft = existing.x;
+            double existingRight = existing.x + existing.width;
+            
+            // Check if ranges overlap (both are on the river, so only x matters)
+            if (newLeft < existingRight && newRight > existingLeft) {
+                return true; // Overlap detected
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a new tower would overlap with any existing tower.
+     * Towers are circles - they overlap if distance between centers < sum of radii.
+     */
+    private boolean towerOverlapsTowers(double newX, double newY) {
+        double towerRadius = 0.5; // Tower size is 1.0 unit, radius is 0.5
+        double minDistance = towerRadius * 2; // Two towers overlap if closer than their combined radii
+        
+        for (Tower existing : tempTowers) {
+            double dx = newX - existing.getX();
+            double dy = newY - existing.getY();
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < minDistance) {
+                return true; // Overlap detected
+            }
+        }
+        return false;
     }
 
     private boolean isKing(Tower t) {
