@@ -162,6 +162,14 @@ public class LocalPvPArenaDesign {
                 return;
             }
 
+            // Check if placement is on the river (river zone is approximately ±1 unit from
+            // riverY)
+            double riverZoneHalfWidth = 1.0; // River spans 1 unit above and below riverY
+            if (Math.abs(gameY - arena.getRiverY()) <= riverZoneHalfWidth) {
+                showAlert("Invalid Position", "Towers cannot be placed on the river!");
+                return;
+            }
+
             // Check counts
             long kingCount = tempTowers.stream().filter(t -> t.isPlayer() && isKing(t)).count();
             long princessCount = tempTowers.stream().filter(t -> t.isPlayer() && !isKing(t)).count();

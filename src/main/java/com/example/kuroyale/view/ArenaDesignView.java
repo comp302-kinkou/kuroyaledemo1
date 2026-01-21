@@ -200,20 +200,29 @@ public class ArenaDesignView {
                 showAlert("Limit Reached", "Max 3 bridges allowed.");
                 return;
             }
-            
+
             // Check if new bridge would overlap with existing bridges
             double newBridgeX = gameX - 1.0;
             double newBridgeWidth = 2.0;
             if (bridgeOverlapsBridges(newBridgeX, newBridgeWidth)) {
-                showAlert("Invalid Placement", "Bridges cannot overlap with each other! Please choose a different location.");
+                showAlert("Invalid Placement",
+                        "Bridges cannot overlap with each other! Please choose a different location.");
                 return;
             }
-            
+
             tempBridges.add(new Arena.Bridge("Bridge " + (tempBridges.size() + 1), newBridgeX, newBridgeWidth));
 
         } else if (currentTool.equals("KING") || currentTool.equals("PRINCESS")) {
             if (!isBottomSide) {
                 showAlert("Invalid Side", "You can only place towers on your side!");
+                return;
+            }
+
+            // Check if placement is on the river (river zone is approximately ±1 unit from
+            // riverY)
+            double riverZoneHalfWidth = 1.0; // River spans 1 unit above and below riverY
+            if (Math.abs(gameY - arena.getRiverY()) <= riverZoneHalfWidth) {
+                showAlert("Invalid Position", "Towers cannot be placed on the river!");
                 return;
             }
 
@@ -223,7 +232,8 @@ public class ArenaDesignView {
 
             // Check if new tower would overlap with existing towers
             if (towerOverlapsTowers(gameX, gameY)) {
-                showAlert("Invalid Placement", "Towers cannot overlap with each other! Please choose a different location.");
+                showAlert("Invalid Placement",
+                        "Towers cannot overlap with each other! Please choose a different location.");
                 return;
             }
 
@@ -252,11 +262,11 @@ public class ArenaDesignView {
     private boolean bridgeOverlapsBridges(double newBridgeX, double newBridgeWidth) {
         double newLeft = newBridgeX;
         double newRight = newBridgeX + newBridgeWidth;
-        
+
         for (Arena.Bridge existing : tempBridges) {
             double existingLeft = existing.x;
             double existingRight = existing.x + existing.width;
-            
+
             // Check if ranges overlap (both are on the river, so only x matters)
             if (newLeft < existingRight && newRight > existingLeft) {
                 return true; // Overlap detected
@@ -272,12 +282,12 @@ public class ArenaDesignView {
     private boolean towerOverlapsTowers(double newX, double newY) {
         double towerRadius = 0.5; // Tower size is 1.0 unit, radius is 0.5
         double minDistance = towerRadius * 2; // Two towers overlap if closer than their combined radii
-        
+
         for (Tower existing : tempTowers) {
             double dx = newX - existing.getX();
             double dy = newY - existing.getY();
             double distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (distance < minDistance) {
                 return true; // Overlap detected
             }
