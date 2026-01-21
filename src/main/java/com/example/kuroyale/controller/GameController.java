@@ -408,8 +408,6 @@ public class GameController {
         activeEffects.clear();
         playerElixirManager = new ElixirManager(); // Reset player elixir
         computerElixirManager = new ElixirManager(); // Reset computer elixir
-        playerElixirManager = new ElixirManager(); // Reset player elixir
-        computerElixirManager = new ElixirManager(); // Reset computer elixir
 
         comboManager.reset(); // Reset combo manager for new game
         activeComboVisuals.clear(); // Clear combo visuals
@@ -1116,7 +1114,7 @@ public class GameController {
                 // wait, if they sent x,y relative to them (Bottom), we mirror to Top.
                 // My logic in setOpponentTowers just parsed x,y.
                 // Mirror now:
-                double mirrorX = opRequest.getX(); // X is preserved usually? No, mirror X too for perspective?
+
                 // Standard Clash Royale: Enemy left is my right?
                 // If enemy puts King at 9,30 (Bottom Center).
                 // I see it at 9, 2 (Top Center).
